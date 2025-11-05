@@ -1,0 +1,22 @@
+# Example: Global Mode with Explicit Breakpoints
+# This config showcases: All variables using the same global regime structure
+# Inherits from: _base_template.yaml
+#
+# KEY FEATURE BEING TESTED: Global mode with synchronized regime transitions
+
+# ===== OVERRIDE: Output configuration to identify this scenario =====
+io:
+  out_dir: "outputs"
+  dataset_name: "global_explicit_example"
+  add_timestamp: true
+  version: "v1"
+  save_pickle: true
+  save_csv: true
+  save_meta: false
+
+# ===== All other settings inherit from _base_template.yaml =====
+# This example uses default base template settings to showcase global mode behavior
+# - 3 synchronized regimes with explicit breakpoints
+# - Weather simulation mode for renewables
+# - Planned outages enabled
+# - All supply variables follow the same global regime transitions

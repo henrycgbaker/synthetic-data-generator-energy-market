@@ -1,0 +1,90 @@
+# Example: Local Only Mode
+# This config showcases: Each variable with its own independent regime structure
+# Inherits from: _base_template.yaml
+#
+# KEY FEATURE BEING TESTED: Local-only mode where variables have independent regimes
+
+# ===== OVERRIDE: Simulation Parameters =====
+start_ts: "2025-01-01 00:00"
+days: 60
+freq: "h"
+
+# ===== OVERRIDE: Supply Regime Planner =====
+supply_regime_planner:
+  mode: "local_only"
+  # No global_settings needed in local_only mode
+
+# ===== OVERRIDE: Variables with local breakpoints =====
+variables:
+  # Fuel Prices - varying regimes with different breakpoints per variable
+  fuel.gas:
+    regimes:
+      - name: "winter_high"
+        dist: {kind: "normal", mu: 45.0, sigma: 8.0, bounds: {low: 20.0, high: 100.0}}
+        breakpoints:
+          - date: "2025-01-01"
+            transition_hours: 24
+      - name: "spring_normal"
+        dist: {kind: "normal", mu: 30.0, sigma: 5.0, bounds: {low: 15.0, high: 80.0}}
+        breakpoints:
+          - date: "2025-02-01"
+            transition_hours: 48
+      - name: "early_spring"
+        dist: {kind: "normal", mu: 35.0, sigma: 6.0, bounds: {low: 15.0, high: 80.0}}
+
+  fuel.coal:
+    regimes:
+      - name: "stable_1"
+        dist: {kind: "normal", mu: 25.0, sigma: 3.0, bounds: {low: 15.0, high: 60.0}}
+        breakpoints:
+          - date: "2025-01-01"
+            transition_hours: 24
+      - name: "stable_2"
+        dist: {kind: "normal", mu: 27.0, sigma: 3.5, bounds: {low: 15.0, high: 60.0}}
+
+  # Availabilities - varying regimes with different breakpoints
+  avail.nuclear:
+    regimes:
+      - name: "winter"
+        dist: {kind: "beta", alpha: 20, beta: 2, low: 0.85, high: 0.98}
+        breakpoints:
+          - date: "2025-01-01"
+            transition_hours: 48
+      - name: "spring"
+        dist: {kind: "beta", alpha: 25, beta: 2, low: 0.88, high: 0.98}
+
+  avail.coal:
+    regimes:
+      - name: "period_1"
+        dist: {kind: "beta", alpha: 18, beta: 3, low: 0.80, high: 0.95}
+        breakpoints:
+          - date: "2025-01-01"
+            transition_hours: 36
+      - name: "period_2"
+        dist: {kind: "beta", alpha: 20, beta: 3, low: 0.82, high: 0.95}
+        breakpoints:
+          - date: "2025-01-20"
+            transition_hours: 36
+      - name: "period_3"
+        dist: {kind: "beta", alpha: 19, beta: 3, low: 0.81, high: 0.95}
+
+  avail.gas:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "beta", alpha: 22, beta: 2, low: 0.88, high: 0.98}
+
+  # Capacities, efficiencies, and bids inherit from base template (single regime)
+
+# ===== OVERRIDE: Planned Outages =====
+planned_outages:
+  enabled: false
+
+# ===== OVERRIDE: Output Configuration =====
+io:
+  out_dir: "outputs"
+  dataset_name: "local_only_example"
+  add_timestamp: true
+  version: "v1"
+  save_pickle: true
+  save_csv: false
+  save_meta: false

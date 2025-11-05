@@ -1,0 +1,134 @@
+[1] Functionality to add:
+
+(A) DEMAND CURVE:
+[X] inelastic demand: the option to toggle on/off a completely inflexible demand curve (i.e. a vertical line)
+[x] Validate inelastic demand (plot)
+[x] demand seasonality: (winter/summer difference is important (e.g. in Europe it is higher in winter, lower in summer, but that's not the case for other countries, so we want the difference to be user-specified) -> specify min/max in peak summer/winter -> the programme interpolates between those poles using a smooth curve function. So have the amp +- set by the user for the summer/winter, and all the other months are an interpolation between that. The smooth curve function should be simple, don't make this overly complex.)
+[x] validate seasonality
+[X] clipping of demand if demand > supply: I already have functionality that if demand is too low it chooses the minimum of the price grid -> have the same but for the case where demand is too high it picks the maximum of the price grid (demand gets clipped at the maximum possible supply).
+
+(B) LOADERS:
+[X] add loader csv for fuel prices (gas price, coal price) and demand: expect this to be a single column of hourly values
+[X] add loader csv for renewable (solar & wind) generation: i.e. load in a systems-level solar & wind generation (in MWh) time series
+
+(C) REGIME SPECS:
+[X] add (/ confirm if already exists) individual regime change points for each parameter: maybe it's already there, but would be good to tidy it up, so that in the YAML each variable is defined as a a series of distributions (as is already), but also at this point in the YAML it's also possible to add when the distributions shifts occur (maybe also the transition hours here too). So each variable can have its regime shifts specified independently of the other r.v.s.
+[X] add a deterministic option to random variables (needed for capacity): worth adding a 'deterministic distribution'(?) in the dist module (?) so that the r.v.s can be modelled as deterministic linear functions, rather than stochastic samples.
+[X] add planned outage functionality in renewable: a simple reduction faction in the availability of nuclear, coal and coal power plants in the summer months (summer time is high time for maintenance, so there should be a regime difference for summer-winter availability). This is for planned maintenance; allow these parameters (i.e. when(?) and how much) to be user defined and exposed in YAML. I previously assumed that the availability of these tech was fully at random so defined them as pure r.v.s, but that's not quite the case, there's a systematic seasonal component: the overall fleet capacity needs to be reduced in the summer months. This means just adding an additional subtraction factor/constant limitation into the R.v. for May through to September (maybe around 1/4, or -10% or something as a default, but let it be user defined/parametrisable). So, add PLANNED outage reduction factor (we already have UNPLANNED outage modelled as the stochastic component). Expose this in user facing YAML.
+[x] validate supply seasonality (plot)
+---
+
+[2] Synthetic scenarios to simulate (YAMLs to set up):
+
+[x] scenario 1: model a gas crisis:
+--- create synthetic data where there is a regime shift in gas, but keeping all the others as a constant single regime.
+--- distribution of gas has a single peak period, then drops back to normal again
+--- perhaps it can also correlate with coal a bit (so coal also has a minor peak following gas, then also drops back to normal)
+--- all other r.v.s are a single regime, the only regime shifts are in gas and coal for a middle period, where gas' regime shift is greater than coal's (NB both share breakpoints, just the level of change is less)
+
+[x] scenario 2: remove coal from the market, add more renewables and gas capacity
+--- coal units drop out at one point (gradual: a multi-year process, then at one point they drop to 0);
+--- during the time there's solar and wind build out -> capacity increases as a linear function (for this need to make sure there's a deterministic option to the capacity variable, this will not increase stochastically)
+--- there's also an increase in gas buildout (to make sure that market clears)
+
+[x] scenario 3: model full seasonality in all r.v.s
+
+
+Miscellaneous to do now (09/10/2025):
+- [x] rafactor & rerationalisethe YAML input scheme:
+- [x] move all breakpoint specification locally to each variable -> e.g. fuel.gas > (1) regimes: (a) name, (b) breakpoints [(i) date & (ii) transition_hours], (c) dist (then remove transition_hours as a list as it sits within the `regimes`). This format for every r.v. (e.g. also availabilities, capacities etc)
+- [x] how to manage global vs local regimes?
+
+- [x] add/check/validate the available distributions:
+- [x] add in uniform distribution as an option
+- [x] add linear / deterministic into distribution <== this currently isn't implemented??? or is it? but I think the claude output had this in at one point?
+
+- [x] rationalise the weather vs wind / solar generation availability as input
+- [x] add a toggle to prioritise either the weather simulation, or the direct input of wind/solar generation availability distributions
+- [x] expose weather parameters in the YAML to the user
+- [x] rationalise this workflow in general
+- [x] validate what is the `rho` param as AR param; valiudate and that modelling here looks correct
+- [x] change example_data -> empirical_data_loaders
+- [x] check & document how the transition hours works (e.g. 24 hrs transiiton hours -> 24 hrs after the breakpoint? or evenly split across?)
+- [x] make the nuclear, wind, and solar supply_at function also downward sloping (like the thermal technologies currently) => so that they decrease linearly until a certain point at which point quantity supplied is zero.
+- [x] in the supply_at(), each technology should accept price argument? => confirm what is 'vals' argument
+- [x] extend the price grid to +1000 and - (?)
+- [x] I think the seasonality yaml is wrong -> it should have seasonality built into the top-level global configs, not in the local variable specs
+- [x] retest inelastic demand
+
+DEMAND VALIDATION NOTEBOOK
+- [x] gets stuck at 4.
+
+[x] GAS CRISIS NOTEBOOK CAN'T LOAD
+- [x] why is market price constant in all the plots? surely it should be varying?
+- [x] why is it not picking up on the regime changes (eg. post crisis)
+
+TO DO (1st order priority)
+- [x] finish runner scripts for scenarios 2  & 3 (should be much the same as scenario 1)
+- [x] add functionality: give demand a daily_seasonality flag -> implements the seasonality or not (I think annual_seasonality's functionality is implemented already, so something similar)
+- [x] write a full battery of tests (unit, integration, functional, etc). I  currently have some test scripts in dir ./testing_scripts/ but I've not done serious testing of a programme before, so help me set up a full testing suite.
+---- [x] use pytest and pre-commit libraries for this
+    --- @pytest.mark.unit & @pytest.mark.integration markers
+    --- .pre-commit-config.yaml (incl pytest & other hooks)
+    - [ ] the .pre-commit is not working currently
+    - [x] unit tests not picking up on the fact the equilibrium doesn't solve & solar.avail is not passed through
+
+---- [x] full validation workflow/battery (either as scripts or as notebooks?) that outputs useful stats & plots for all the variables under a range of different possible generic cases and conditions. This allows us to investigate important variables so we can check they look reasonable / are behaving as expected.
+    --- e.g. plots that test seasoality of demand; seasonality of supply (both in aggregate, so as a result of weather, planned_outages etc - but also specific plots to visualise supply's seasonality components such as planned_outages, effect of weather simulation on solar & wind, etc
+    --- be comprehensive,
+---- [x] standardise the validation workbooks for each of the 3 scenarios
+    --- reusing relevant code from the validation_notebook_DELETE.ipynb
+
+- [x] look over then delete run_diagnostics.pytest
+
+TO PICK UP NEXT time
+- [x] run run_diagnostics.pytest
+- [x] then delete this and move back to pytest direct implmentaiton
+    - make sure that pytest implementation 
+- [x] look over and check tests are valid
+    - manual inspection
+- [x] make order of pytest: unit > functional > integration
+- [x] make sure I am completing all tests
+- [x] investigate validation notebook plots (& develop out further)
+- [x] MARKET PRICE STILL NOT RESPONSIVE!
+- [x] Go back to config & reimplement negative bigs
+- [x] for all of the example yaml configs showcasing particular feature, have them inherit from a generic template yaml, then just the feature's configs are changed. This way it is explicit to see what is going on and what is changing.
+
+... using these tests, identify bugs that cause:
+
+CRITICAL PROBLEMS
+- [x] the market price still doesn't change!
+- [x] avail.solar -> always 0.0....(this passes the unit test, so it must be not being passed through correctly somewhere)
+- [x] linearity function not linear (see notebook 2)
+    [x] failed a new linearity test
+- [x] avail.wind -> very low, always <.5; this might be fine, but need to confirm why
+- [x] in the gas crisis scenario, the resulting df doesn't have all the regimes, it just has normal and then crisis, no post crisis. is this because of the dates of the first breakpoint is the same as the start date? still I don't know why it would do that.
+diagnose the problems, without making any edits to files, just identify the bugs
+
+
+FROM VALIDATION NOTEBOOK
+- [ ] correct the time series cross section curve
+- [ ] why is avail.nuclear etc changing with regime??? This looks like faulty behaviour
+- [ ] also, shouldn't all the availabilities decrease with planned outage?
+- ^^^ is it that the planned outages happen to be occuring at the same time as the regime changes?????
+- [ ] change tech colours to be more distinguished from eachother!
+- [ ] need to add multiple regimes in the coal phaseout case
+- [ ] solar goes from 0 -> 0.35 ==> what's a more appropriate bound ? 0->1?
+- [ ] wind avail also very low -> hovering around 0.5 -> change to more appopriate mean
+
+TO DO (2nd order priority)
+- [x] write tests for & validate that CSV loaders work
+- [x] plot quantity supplied of each tech across full timeseries (to include outages, and availability etc)
+- [x] in demand validation notebook, qty demanded at p=60 doesn't change throughout the years - look into
+- [x] make runners also available from root (not just within the synthetic_data dir)
+- [x] add nicer print out in the _execute() workflow, so it's nicer UX if run as an api call (`supply_curves run 3_gas_crisis`) - more explanatory print
+
+FUTURE ENHANCEMENTS (2nd order priority):
+- [x] Unit test suite
+- [ ] add CO2 price as an input var
+- [ ] WRITE DOCUMENTAION!!!
+    - [ ] big pic what is each module doing
+- [ ] Import-export modeling
+--- import-export doesn't come for free, it comes at the price of the trade partners -> add a tech called 'trade', this is priced as an r.v., the Marginal cost of this is constant, it's just at the price of the neighbouring country.
+- [ ] wind sampling not properly implemeted if `weather_simulate`
+- [x] CLI script has the basic _execute fn... this is the fundamental runner -> move this out to somewhere it makes more conceptual sense, then the cli.py is just pure cli focused stuff.

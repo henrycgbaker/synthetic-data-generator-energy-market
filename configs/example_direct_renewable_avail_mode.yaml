@@ -1,0 +1,86 @@
+# Example: Direct Availability Mode with Distributions
+# This config showcases: Specifying wind and solar availability directly using regimes
+# Inherits from: _base_template.yaml
+#
+# KEY FEATURE BEING TESTED: Direct specification of renewable availability
+
+# ===== OVERRIDE: Renewable Availability Mode =====
+renewable_availability_mode: "direct"
+
+# Weather simulation not needed in direct mode
+
+# ===== OVERRIDE: Supply Regime Planner =====
+supply_regime_planner:
+  mode: "global"
+  global_settings:
+    n_regimes: 4
+    sync_regimes: true
+    breakpoints:
+      - date: "2024-01-01"
+        transition_hours: 48
+      - date: "2024-04-01"
+        transition_hours: 96
+      - date: "2024-07-01"
+        transition_hours: 72
+      - date: "2024-10-01"
+        transition_hours: 96
+
+# ===== OVERRIDE: Variables =====
+variables:
+  # Fuel prices - 4 seasonal regimes
+  fuel.gas:
+    regimes:
+      - name: "winter"
+        dist: {kind: "normal", mu: 40.0, sigma: 6.0, bounds: {low: 20.0, high: 80.0}}
+      - name: "spring"
+        dist: {kind: "normal", mu: 30.0, sigma: 5.0, bounds: {low: 15.0, high: 60.0}}
+      - name: "summer"
+        dist: {kind: "normal", mu: 25.0, sigma: 4.0, bounds: {low: 15.0, high: 50.0}}
+      - name: "fall"
+        dist: {kind: "normal", mu: 35.0, sigma: 5.0, bounds: {low: 20.0, high: 70.0}}
+
+  fuel.coal:
+    regimes:
+      - name: "winter"
+        dist: {kind: "normal", mu: 28.0, sigma: 3.0, bounds: {low: 18.0, high: 50.0}}
+      - name: "spring"
+        dist: {kind: "normal", mu: 25.0, sigma: 3.0, bounds: {low: 15.0, high: 45.0}}
+      - name: "summer"
+        dist: {kind: "normal", mu: 23.0, sigma: 2.5, bounds: {low: 15.0, high: 40.0}}
+      - name: "fall"
+        dist: {kind: "normal", mu: 26.0, sigma: 3.0, bounds: {low: 16.0, high: 48.0}}
+
+  # RENEWABLE AVAILABILITIES - Direct specification by season
+  avail.wind:
+    regimes:
+      - name: "winter_windy"
+        dist: {kind: "beta", alpha: 22, beta: 6, low: 0.35, high: 0.65}
+      - name: "spring_moderate"
+        dist: {kind: "beta", alpha: 18, beta: 10, low: 0.25, high: 0.55}
+      - name: "summer_calm"
+        dist: {kind: "beta", alpha: 12, beta: 18, low: 0.15, high: 0.40}
+      - name: "fall_moderate"
+        dist: {kind: "beta", alpha: 20, beta: 8, low: 0.30, high: 0.60}
+
+  avail.solar:
+    regimes:
+      - name: "winter_low"
+        dist: {kind: "beta", alpha: 15, beta: 20, low: 0.05, high: 0.25}
+      - name: "spring_rising"
+        dist: {kind: "beta", alpha: 20, beta: 12, low: 0.15, high: 0.35}
+      - name: "summer_high"
+        dist: {kind: "beta", alpha: 25, beta: 8, low: 0.20, high: 0.40}
+      - name: "fall_declining"
+        dist: {kind: "beta", alpha: 18, beta: 15, low: 0.10, high: 0.30}
+
+  # Other variables inherit from base template
+
+# ===== OVERRIDE: Output Configuration =====
+io:
+  out_dir: "outputs"
+  dataset_name: "direct_availability_example"
+  add_timestamp: true
+  version: "v1"
+  save_pickle: true
+  save_csv: true
+  save_meta: true

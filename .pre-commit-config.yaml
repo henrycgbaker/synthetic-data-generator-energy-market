@@ -1,0 +1,68 @@
+# repos:
+#   # Basic file checks
+#   - repo: https://github.com/pre-commit/pre-commit-hooks
+#     rev: v4.5.0
+#     hooks:
+#       - id: trailing-whitespace # remove unnecesary whitespace
+#       - id: end-of-file-fixer # ensure files end with a newline
+#       - id: check-yaml # check yaml files are valid
+#       - id: check-added-large-files # warns if a new file added in commit exceeds 1 MB.
+#         args: ['--maxkb=1000']
+#       - id: check-json
+#       - id: check-toml
+#       - id: check-merge-conflict
+#       #- id: debug-statements # come back to remove this, I want debug statements in dev
+#       - id: mixed-line-ending
+
+#   # Python code formatting with black
+#   - repo: https://github.com/psf/black
+#     rev: 24.1.1
+#     hooks:
+#       - id: black
+#         language_version: python3.12
+
+#   # Import sorting with isort
+#   - repo: https://github.com/pycqa/isort
+#     rev: 5.13.2
+#     hooks:
+#       - id: isort
+#         args: ["--profile", "black"]
+
+#   # Linting with ruff (fast alternative to flake8)
+#   - repo: https://github.com/astral-sh/ruff-pre-commit
+#     rev: v0.2.1
+#     hooks:
+#       - id: ruff
+#         args: [--fix, --exit-non-zero-on-fix] # fails the commit if fixes were needed
+
+#   # Type checking with mypy
+#   - repo: https://github.com/pre-commit/mirrors-mypy
+#     rev: v1.8.0
+#     hooks:
+#       - id: mypy
+#         additional_dependencies:
+#           - types-PyYAML
+#           - pandas-stubs
+#         args: [--ignore-missing-imports, --no-strict-optional]
+
+  # # Run unit tests with pytest
+  # - repo: local
+  #   hooks:
+  #     - id: pytest-unit
+  #       name: pytest-unit
+  #       entry: pytest -m unit
+  #       language: system
+  #       pass_filenames: false # runs on entire suite, not per file
+  #       always_run: true
+  #       stages: [commit]
+
+  # # Run smoke tests (quick integration checks)
+  # - repo: local
+  #   hooks:
+  #     - id: pytest-smoke
+  #       name: pytest-smoke
+  #       entry: pytest -m smoke
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true
+  #       stages: [push]

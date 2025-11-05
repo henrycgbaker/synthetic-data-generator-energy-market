@@ -1,0 +1,257 @@
+# Base Template Configuration
+# This template provides default values that other configs can inherit from
+
+# ===== SIMULATION PARAMETERS =====
+start_ts: "2024-01-01 00:00"
+days: 365
+freq: "h"
+seed: 42
+
+# ===== DEMAND CONFIGURATION =====
+demand:
+  inelastic: false 
+  base_intercept: 45.0 # this is choke price with q=0 ($/MWh)
+  slope: -7.0 # dP/dQ ($/MW)
+  day_peak_hour: 14
+  day_amp: 0.25
+  weekend_drop: 0.10
+  annual_seasonality: true
+  winter_amp: 0.15
+  summer_amp: -0.10
+
+# ===== PLANNED OUTAGES =====
+#-> affect thermal & nuclear techs' availability -> affect supply
+planned_outages:
+  enabled: true
+  months: [5, 6, 7, 8, 9]
+  nuclear_reduction: 0.12
+  coal_reduction: 0.10
+  gas_reduction: 0.08
+
+# ===== RENEWABLE AVAILABILITY MODE =====
+# "weather_simulation" -> affects availability of wind and solar via specified weather models; 
+# as opposed to direct sampling from distributions
+
+renewable_availability_mode: "weather_simulation" # for direct sampling, remove this line -> directly set `avail.wind` distribution (below)
+
+# ===== WEATHER SIMULATION =====
+weather_simulation:
+  wind: # @TODO this isn't properly implemented, there's no meaningful diff between this path vs sampling from dist??? (low priority)
+    model: "ar1"
+    params:
+      base_capacity_factor: 0.45 # avg capacity factor of wind techs
+      persistence: 0.85
+      volatility: 0.15
+  solar:
+    model: "sinusoidal"
+    params:
+      sunrise_hour: 6
+      sunset_hour: 20
+      peak_capacity_factor: 0.35
+  
+
+# ===== SUPPLY REGIME PLANNER =====
+supply_regime_planner:
+  mode: "local_only"
+
+# ===== VARIABLES =====
+variables:
+  # Fuel prices
+  fuel.gas:
+    regimes:
+      - name: "normal"
+        dist: {kind: "normal", mu: 30.0, sigma: 5.0, bounds: {low: 10.0, high: 100.0}}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 48
+      - name: "crisis"
+        dist: {kind: "normal", mu: 85.0, sigma: 15.0, bounds: {low: 40.0, high: 150.0}}
+        breakpoints:
+          - date: "2024-05-01"
+            transition_hours: 96
+      - name: "post_crisis"
+        dist: {kind: "normal", mu: 35.0, sigma: 6.0, bounds: {low: 15.0, high: 100.0}}
+        breakpoints:
+          - date: "2024-09-01"
+            transition_hours: 72
+
+  fuel.coal:
+    regimes:
+      - name: "normal"
+        dist: {kind: "normal", mu: 25.0, sigma: 3.0, bounds: {low: 15.0, high: 60.0}}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 48
+      - name: "elevated"
+        dist: {kind: "normal", mu: 35.0, sigma: 5.0, bounds: {low: 20.0, high: 70.0}}
+        breakpoints:
+          - date: "2024-05-01"
+            transition_hours: 96
+      - name: "post_crisis"
+        dist: {kind: "normal", mu: 27.0, sigma: 3.5, bounds: {low: 15.0, high: 60.0}}
+        breakpoints:
+          - date: "2024-09-01"
+            transition_hours: 72
+
+  # Capacities
+  cap.nuclear:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 5000.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  cap.coal:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 8000.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  cap.gas:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 12000.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  cap.wind:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 6000.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  cap.solar:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 4000.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  # Availabilities
+  avail.nuclear:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "normal", mu: 1.0, sigma: 0.1, bounds: {low: 0.8, high: 1.2}}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  avail.coal:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "normal", mu: 1.0, sigma: 0.1, bounds: {low: 0.8, high: 1.2}}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  avail.gas:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "normal", mu: 1.0, sigma: 0.1, bounds: {low: 0.8, high: 1.2}}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  # Thermal efficiencies
+  eta_lb.coal:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 0.33}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  eta_ub.coal:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 0.38}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  eta_lb.gas:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 0.48}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  eta_ub.gas:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 0.55}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  # Bids
+  bid.nuclear.min:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "const", v: -200.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  bid.nuclear.max:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "const", v: -50.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  bid.wind.min:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "const", v: -200.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  bid.wind.max:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "const", v: -50.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  bid.solar.min:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "const", v: -200.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+  bid.solar.max:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "const", v: -50.0}
+        breakpoints:
+          - date: "2024-01-01"
+            transition_hours: 24
+
+# ===== EMPIRICAL SERIES =====
+empirical_series: {}
+
+
+
+# ===== OUTPUT CONFIGURATION =====
+io:
+  out_dir: "outputs"
+  dataset_name: "base_scenario"
+  add_timestamp: true
+  version: "v1"
+  save_pickle: true
+  save_csv: true
+  save_meta: false
