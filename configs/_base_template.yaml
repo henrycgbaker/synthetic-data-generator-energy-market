@@ -36,12 +36,12 @@ renewable_availability_mode: "weather_simulation" # for direct sampling, remove 
 
 # ===== WEATHER SIMULATION =====
 weather_simulation:
-  wind: # @TODO this isn't properly implemented, there's no meaningful diff between this path vs sampling from dist??? (low priority)
-    model: "ar1"
+  wind:
+    model: "ar1"  # AR(1) process with multi-day persistence
     params:
       base_capacity_factor: 0.45 # avg capacity factor of wind techs
-      persistence: 0.85
-      volatility: 0.15
+      persistence: 0.85  # Autocorrelation coefficient (0-1)
+      volatility: 0.15  # Standard deviation of hourly innovations
   solar:
     model: "sinusoidal"
     params:

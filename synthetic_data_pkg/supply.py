@@ -20,16 +20,22 @@ class WindWeatherModel:
         self._last_ts: Optional[pd.Timestamp] = None
 
     def availability_at(self, ts: pd.Timestamp) -> float:
-        """Calculate wind availability (capacity factor) at given timestamp"""
+        """
+        Calculate wind availability (capacity factor) at given timestamp.
+
+        Uses AR(1) process: cf_t = base_cf + rho*(cf_{t-1} - base_cf) + sigma*epsilon
+        Maintains persistence across days for realistic multi-day weather patterns.
+        """
         key = ts.floor("h")
         if key in self._cache:
             return self._cache[key]
 
-        # New day: reinitialize
-        if (self._last_ts is None) or (self._last_ts.floor("h").date() != key.date()):
+        # Initialize on first call
+        if self._last_ts is None:
             cf = np.clip(self._rng.normal(self.base_cf, 0.10), 0.0, 1.0)
         else:
             # AR(1): cf_t = base_cf + rho*(cf_{t-1} - base_cf) + sigma*epsilon
+            # Maintains persistence across days for realistic weather patterns
             prev_cf = self._cache.get(self._last_ts.floor("h"), self.base_cf)
             cf = (
                 self.base_cf

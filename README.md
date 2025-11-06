@@ -47,17 +47,32 @@ make test
 
 ### Running a Scenario
 
-The easiest way to get started is to run one of the pre-configured scenarios:
+The package provides a `generate` command-line tool. Use `generate run` followed by the path to a configuration file:
 
 ```bash
-# use the CLI directly (recommended)
+# RECOMMENDED: CLI 
+
+# Run a pre-configured scenario (recommended way to get started)
 generate run configs/1_gas_crisis.yaml
 
-# or run the gas crisis scenario (1 year simulation)
-python run_scenario1_gas_crisis.py
+# The command accepts relative paths from your current directory
+generate run configs/2_coal_phaseout.yaml
+
+# Or absolute paths
+generate run /path/to/my/custom_scenario.yaml
+```
+```bash
+# Alternative: use the runner scripts (BUT inferior UI to CLI)
+python runners/run_scenario1_gas_crisis.py
+python runners/run_scenario2_coal_phaseout.py
+
+# Run all scenarios at once
+python runners/run_all_scenarios.py
 ```
 
 This will generate synthetic market data and save it to the `outputs/` directory.
+
+**Key Command Format:** `generate run <config_file_path>`
 
 ### Output Files
 
@@ -65,6 +80,7 @@ By default, scenarios generate:
 - **CSV file**: Time series data with prices, quantities, and generation dispatch
 - **Pickle file**: Pandas DataFrame for easy loading in Python
 - **Metadata JSON**: Configuration snapshot and run information
+- More formats available (see `~/configs/_base_config`)
 
 Output files are saved in `outputs/` with timestamps and version numbers.
 
