@@ -104,21 +104,59 @@ def load_config(path: str) -> Dict:
     )
 
 
+def _deep_merge(base: Dict, override: Dict) -> Dict:
+    """
+    Deep merge two dictionaries. Override values take precedence.
+    For nested dicts, recursively merge. For lists, override replaces base.
+    """
+    result = base.copy()
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
 def _read_config_file(candidate: Path) -> Dict:
+    """
+    Read a config file and handle inheritance via 'extends' field.
+
+    If the config contains an 'extends' field, load the base config first
+    and deep merge it with the current config.
+    """
     suffix = candidate.suffix.lower()
     with candidate.open("r") as f:
         if suffix in (".yml", ".yaml"):
-            return yaml.safe_load(f)
+            config = yaml.safe_load(f)
         elif suffix == ".json":
-            return json.load(f)
+            config = json.load(f)
         else:
             # try YAML first, then JSON
             try:
                 f.seek(0)
-                return yaml.safe_load(f)
+                config = yaml.safe_load(f)
             except Exception:
                 f.seek(0)
-                return json.load(f)
+                config = json.load(f)
+
+    # Handle config inheritance
+    if isinstance(config, dict) and "extends" in config:
+        base_path = config.pop("extends")
+
+        # Resolve base path relative to current config directory
+        if not os.path.isabs(base_path):
+            base_path = (candidate.parent / base_path).resolve()
+        else:
+            base_path = Path(base_path)
+
+        # Load base config (recursively handles nested extends)
+        base_config = _read_config_file(base_path)
+
+        # Deep merge: base config + current config
+        config = _deep_merge(base_config, config)
+
+    return config
 
 
 def load_single_column_csv(
