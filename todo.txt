@@ -107,14 +107,15 @@ diagnose the problems, without making any edits to files, just identify the bugs
 
 
 FROM VALIDATION NOTEBOOK
-- [ ] correct the time series cross section curve
-- [ ] why is avail.nuclear etc changing with regime??? This looks like faulty behaviour
-- [ ] also, shouldn't all the availabilities decrease with planned outage?
+- [x] correct the time series cross section curve
+- [x] why is avail.nuclear etc changing with regime??? This looks like faulty behaviour
+- [x] also, shouldn't all the availabilities decrease with planned outage?
 - ^^^ is it that the planned outages happen to be occuring at the same time as the regime changes?????
 - [ ] change tech colours to be more distinguished from eachother!
-- [ ] need to add multiple regimes in the coal phaseout case
+- [x] need to add multiple regimes in the coal phaseout case
 - [ ] solar goes from 0 -> 0.35 ==> what's a more appropriate bound ? 0->1?
 - [ ] wind avail also very low -> hovering around 0.5 -> change to more appopriate mean
+- [ ] in validate_scenario.ipynb, the market price barely changes (but it's the same data as in the other notebooks where it does change!) --> why???
 
 TO DO (2nd order priority)
 - [x] write tests for & validate that CSV loaders work

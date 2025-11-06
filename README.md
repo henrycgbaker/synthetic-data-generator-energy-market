@@ -59,6 +59,7 @@ cd <repo path>
 
 2. Install the package in editable mode with development dependencies:
 ```bash
+# after activating venv
 pip install -e ".[dev]"
 ```
 
