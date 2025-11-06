@@ -2,9 +2,18 @@
 
 A Python package for generating realistic synthetic electricity market time series data with regime shifts. This tool simulates wholesale power markets by modeling supply curves (across different generation technologies), demand curves, and computing market equilibrium prices and quantities over time.
 
+## Features
+
+- **Multi-technology supply modeling**: Nuclear, coal, gas, wind, and solar generation
+- **Regime-based evolution**: Parameters can shift over time with smooth transitions between regimes
+- **Weather-driven renewables**: AR(1) wind model and sinusoidal solar patterns
+- **Flexible demand models**: Elastic (price-responsive) or inelastic demand with daily/seasonal patterns
+- **Realistic market dynamics**: Merit-order dispatch, planned outages, efficiency curves
+- **Configurable scenarios**: YAML-based configuration for easy scenario definition
+
+
 ## Table of Contents
-  * [Features](#features)
-  * [Installation](#installation
+  * [Installation](#installation)
   * [Quick Start](#quick-start)
   * [Configuration Guide](#configuration-guide)
     * [Top-Level Parameters](#top-level-parameters)
@@ -32,15 +41,6 @@ A Python package for generating realistic synthetic electricity market time seri
   * [Troubleshooting](#troubleshooting)
   * [Contributing](#contributing)
 
-
-## Features
-
-- **Multi-technology supply modeling**: Nuclear, coal, gas, wind, and solar generation
-- **Regime-based evolution**: Parameters can shift over time with smooth transitions between regimes
-- **Weather-driven renewables**: AR(1) wind model and sinusoidal solar patterns
-- **Flexible demand models**: Elastic (price-responsive) or inelastic demand with daily/seasonal patterns
-- **Realistic market dynamics**: Merit-order dispatch, planned outages, efficiency curves
-- **Configurable scenarios**: YAML-based configuration for easy scenario definition
 
 ## Installation
 
@@ -476,29 +476,37 @@ planned_outages:
 
 **Impact on Wind/Solar**: NOT affected by planned outages (only `nuclear`, `coal`, `gas`)
 
-### Empirical Series
+### Empirical Time Series Data
 
 Load real-world time series data instead of sampling from distributions:
 
 ```yaml
 empirical_series:
-  # Map variable name -> path to CSV file
-  fuel.gas: "data/historical_gas_prices.csv"
-  avail.wind: "data/wind_generation_2023.csv"
+  # Map variable name -> relative path to CSV file
+  fuel.gas: "empirical_data/empirical_solar_generation.csv"
+  avail.wind: "empirical_data/wind_generation_2023.csv"
   # Paths relative to config file location
 ```
 
 **CSV Format Requirements:**
 - **Two-column format**: `timestamp, value`
-  - Column names: `ts`/`time`/`timestamp`/`datetime` for time, anything else for value
+  - Timestamp column: Named `ts`/`time`/`timestamp`/`datetime`/`date`, or left unnamed/blank
+  - Value column: Any name (automatically detected)
+  - Timestamps can be timezone-aware (e.g., `2024-01-01 00:00:00+00:00`) - will be converted to timezone-naive
 - **Single-column format**: Just values (assumes implicit hourly index starting 2020-01-01)
 
-**Example CSV:**
+**Example CSVs:**
 ```csv
 timestamp,value
 2024-01-01 00:00,28.50
 2024-01-01 01:00,29.20
 2024-01-01 02:00,28.80
+```
+
+```csv
+,Solar
+2024-01-01 00:00:00+00:00,0.0
+2024-01-01 01:00:00+00:00,314.0
 ```
 
 **Behavior**: When a variable uses empirical data, it OVERRIDES any regime distributions for that variable.

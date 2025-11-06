@@ -171,7 +171,12 @@ def load_single_column_csv(
 
     If CSV has only one column, assumes it's values with implicit hourly index.
 
-    Returns: pd.Series with DatetimeIndex
+    Robustly handles:
+    - Unnamed timestamp columns (empty string or "Unnamed: 0")
+    - Timezone-aware timestamps (e.g., "2019-01-01 00:00:00+00:00")
+    - Various timestamp column names (ts, time, timestamp, date, datetime)
+
+    Returns: pd.Series with DatetimeIndex (timezone-naive for compatibility)
     """
     df = pd.read_csv(path)
 
@@ -181,24 +186,52 @@ def load_single_column_csv(
         index = pd.date_range(start="2020-01-01", periods=len(values), freq="h")
         return pd.Series(values, index=index, name=Path(path).stem)
 
-    # Two columns: expect ts and value
-    if ts_col not in df.columns:
-        # Try to find timestamp column
-        for col in df.columns:
-            if col.lower() in ("time", "timestamp", "date", "datetime", "ts"):
-                ts_col = col
-                break
-        else:
-            raise ValueError(
-                f"Could not find timestamp column in {path}. Expected '{ts_col}'"
-            )
+    # Two or more columns: find timestamp and value columns
+    ts_col_found = None
 
-    if value_col not in df.columns:
-        # Use the other column
-        value_col = [c for c in df.columns if c != ts_col][0]
+    # First, try to find timestamp column by name
+    for col in df.columns:
+        col_lower = str(col).lower().strip()
+        if col_lower in ("time", "timestamp", "date", "datetime", "ts"):
+            ts_col_found = col
+            break
+
+    # If not found, check if first column looks like timestamps
+    if ts_col_found is None:
+        first_col = df.columns[0]
+        # Check for unnamed columns or if first column contains datetime-like strings
+        if str(first_col).startswith("Unnamed") or first_col == "":
+            # Try to parse first few values to see if they're timestamps
+            try:
+                pd.to_datetime(df.iloc[:5, 0])
+                ts_col_found = first_col
+            except (ValueError, TypeError):
+                pass
+
+    if ts_col_found is None:
+        raise ValueError(
+            f"Could not find timestamp column in {path}. "
+            f"Expected column named one of: ts, time, timestamp, date, datetime. "
+            f"Found columns: {list(df.columns)}"
+        )
+
+    # Find value column (should be anything that's not the timestamp column)
+    value_cols = [c for c in df.columns if c != ts_col_found]
+    if not value_cols:
+        raise ValueError(f"Could not find value column in {path}")
+    value_col_found = value_cols[0]
+
+    # Parse timestamps and create series
+    timestamps = pd.to_datetime(df[ts_col_found])
+
+    # Convert to timezone-naive if timezone-aware (for compatibility with regime schedules)
+    if timestamps.dt.tz is not None:
+        timestamps = timestamps.dt.tz_localize(None)
 
     s = pd.Series(
-        df[value_col].values, index=pd.to_datetime(df[ts_col]), name=Path(path).stem
+        df[value_col_found].values,
+        index=timestamps,
+        name=Path(path).stem
     ).sort_index()
 
     return s
