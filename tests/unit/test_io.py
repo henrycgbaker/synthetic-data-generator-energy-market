@@ -125,7 +125,6 @@ class TestSaveDataset:
 
 @pytest.mark.unit
 class TestLoadSingleColumnCSV:
-class TestLoadSingleColumnCSV:
     """Test loading empirical data from CSV"""
 
     def test_load_two_column_csv(self):
