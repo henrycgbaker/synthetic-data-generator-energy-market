@@ -2,6 +2,37 @@
 
 A Python package for generating realistic synthetic electricity market time series data with regime shifts. This tool simulates wholesale power markets by modeling supply curves (across different generation technologies), demand curves, and computing market equilibrium prices and quantities over time.
 
+## Table of Contents
+  * [Features](#features)
+  * [Installation](#installation
+  * [Quick Start](#quick-start)
+  * [Configuration Guide](#configuration-guide)
+    * [Top-Level Parameters](#top-level-parameters)
+    * [Demand Configuration](#demand-configuration)
+    * [Supply Regime Planner](#supply-regime-planner)
+    * [Variable Definitions](#variable-definitions)
+    * [Distribution Types](#distribution-types)
+    * [Renewable Availability Modes](#renewable-availability-modes)
+    * [Empirical Series](#empirical-series)
+    * [Output Configuration](#output-configuration)
+    * [Complete Configuration Example](#complete-configuration-example)
+    * [Common Configuration Patterns](#common-configuration-patterns)
+    * [Configuration Validation & Troubleshooting](#configuration-validation--troubleshooting)
+    * [Example Scenarios](#example-scenarios)
+  * [Package Architecture](#package-architecture)
+    * [Core Modules](#core-modules)
+    * [How It Works](#how-it-works)
+    * [Supply Curve Construction](#supply-curve-construction)
+    * [Equilibrium Solver](#equilibrium-solver)
+  * [Development](#development)
+    * [Running Tests](#running-tests)
+    * [Code Quality](#code-quality)
+    * [Test Organization](#test-organization)
+  * [Advanced Usage](#advanced-usage)
+  * [Troubleshooting](#troubleshooting)
+  * [Contributing](#contributing)
+
+
 ## Features
 
 - **Multi-technology supply modeling**: Nuclear, coal, gas, wind, and solar generation
