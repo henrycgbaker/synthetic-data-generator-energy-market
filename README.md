@@ -86,117 +86,711 @@ Output files are saved in `outputs/` with timestamps and version numbers.
 
 ## Configuration Guide
 
-### Configuration Structure
+All scenarios are defined using YAML configuration files. This section provides a comprehensive reference for all available configuration options.
 
-Scenarios are defined using YAML configuration files. Here's the structure:
+### Top-Level Parameters
 
 ```yaml
-# Time parameters
-start_ts: "2024-01-01 00:00"
-days: 365
-freq: "h"  # hourly timesteps
-seed: 42
+# Simulation time parameters
+start_ts: "2024-01-01 00:00"  # Start timestamp (YYYY-MM-DD HH:MM format)
+days: 365                      # Simulation duration in days
+freq: "h"                      # Timestep frequency ("h" for hourly)
+seed: 42                       # Random seed for reproducibility
 
-# Demand curve parameters
-demand:
-  inelastic: false          # true = fixed quantity, false = price-responsive
-  base_intercept: 45.0      # Choke price ($/MWh)
-  slope: -7.0               # Price elasticity ($/MW)
-  daily_seasonality: true   # Daily peak/off-peak patterns
-  annual_seasonality: true  # Winter/summer variations
-
-# Supply regime planner
-supply_regime_planner:
-  mode: "local_only"  # Options: "local_only", "global", "hybrid"
-
-# Variable definitions (fuel prices, capacities, availabilities, etc.)
-variables:
-  fuel.gas:
-    regimes:
-      - name: "normal"
-        dist: {kind: "normal", mu: 30.0, sigma: 5.0}
-        breakpoints:
-          - date: "2024-01-01"
-            transition_hours: 48
-  # ... more variables
-
-# Output settings
-io:
-  out_dir: "outputs"
-  dataset_name: "my_scenario"
-  save_csv: true
-  save_pickle: true
+# Price grid for equilibrium solver
+price_grid: [-100, -50, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 150, 200, 300]
+# Can be specified as a list or range
+# Finer grids = more accurate equilibrium but slower computation
+# Must span expected price range (renewables can have negative bids)
 ```
 
-### Variable Types
+### Demand Configuration
 
-Variables follow a dot-notation naming convention:
+The `demand` section controls the demand curve and seasonality patterns:
+
+```yaml
+demand:
+  # === DEMAND CURVE TYPE ===
+  inelastic: false
+  # false = Elastic demand (price-responsive, downward-sloping)
+  # true  = Inelastic demand (fixed quantity regardless of price)
+  # ⚠️  IMPORTANT: When true, slope parameter is IGNORED
+
+  # === ELASTIC DEMAND PARAMETERS (used only if inelastic=false) ===
+  base_intercept: 45.0  # Choke price: price when quantity = 0 ($/MWh)
+  slope: -7.0           # dP/dQ ($/MW) - must be negative for downward slope
+  # Inverse demand equation: P = base_intercept + slope * Q
+  # Example: P = 45 - 7*Q means at Q=0, P=$45/MWh
+
+  # === INELASTIC DEMAND PARAMETER (used only if inelastic=true) ===
+  # When inelastic=true, base_intercept defines the FIXED QUANTITY level
+  # Seasonality multipliers still apply to this fixed quantity
+
+  # === DAILY SEASONALITY ===
+  daily_seasonality: true  # Enable/disable daily peak/off-peak patterns
+  # The following parameters are IGNORED if daily_seasonality=false:
+  day_peak_hour: 14        # Hour of daily peak (0-23, default 14 = 2pm)
+  day_amp: 0.25            # Peak amplitude (0-1, e.g., 0.25 = ±25% variation)
+  weekend_drop: 0.10       # Weekend reduction factor (0-1, e.g., 0.10 = 10% lower)
+  # Pattern: Cosine wave centered on day_peak_hour
+  # Weekends (Sat/Sun) reduced by weekend_drop factor
+
+  # === ANNUAL SEASONALITY ===
+  annual_seasonality: true  # Enable/disable winter/summer patterns
+  # The following parameters are IGNORED if annual_seasonality=false:
+  winter_amp: 0.15          # Winter increase (Dec-Feb), e.g., 0.15 = +15%
+  summer_amp: -0.10         # Summer decrease (Jun-Aug), e.g., -0.10 = -10%
+  # Pattern: Smooth cosine interpolation between winter peak and summer trough
+```
+
+**Demand Curve Behavior:**
+- **Elastic** (`inelastic=false`): Standard inverse demand `P = intercept + slope * Q`
+  - Higher prices → lower quantity demanded
+  - Used for equilibrium finding where supply price = demand price
+- **Inelastic** (`inelastic=true`): Vertical demand curve at fixed quantity
+  - Quantity doesn't respond to price
+  - `base_intercept` defines the fixed quantity level (not price!)
+  - Equilibrium finds price where supply meets this fixed quantity
+
+### Supply Regime Planner
+
+Controls how regime transitions are coordinated across variables:
+
+```yaml
+supply_regime_planner:
+  mode: "local_only"  # Options: "local_only", "global", "hybrid"
+  # Mode determines regime coordination strategy
+
+  # global_settings REQUIRED for "global" and "hybrid" modes
+  # global_settings MUST NOT be present for "local_only" mode
+  global_settings:  # Omit this entire section for local_only mode
+    n_regimes: 3           # Number of regimes for all variables
+    sync_regimes: true     # All variables transition simultaneously
+
+    # === BREAKPOINT SPECIFICATION (choose ONE approach) ===
+
+    # Option 1: Explicit breakpoints (dates specified manually)
+    breakpoints:
+      - date: "2024-01-01"
+        transition_hours: 48   # Transition window BEFORE this date
+      - date: "2024-05-01"
+        transition_hours: 168  # 7-day transition
+      - date: "2024-09-01"
+        transition_hours: 72
+
+    # Option 2: Stochastic breakpoints (randomly generated)
+    stochastic_breakpoints:
+      enabled: true
+      min_segment_days: 30   # Minimum regime duration
+      max_segment_days: 180  # Maximum regime duration
+      transition_hours:
+        type: "fixed"        # "fixed" or "range"
+        value: 168          # Hours (if type="fixed")
+        # OR for type="range":
+        # min: 24
+        # max: 336
+
+    # Distribution templates (used when variables don't specify distributions)
+    distribution_templates:
+      fuel.gas: {kind: "normal", mu: 30.0, sigma: 5.0}
+      fuel.coal: {kind: "normal", mu: 25.0, sigma: 3.0}
+      # Template applied to all regimes for these variables
+```
+
+**Mode Behavior:**
+
+1. **`local_only`**: Each variable is independent
+   - Each variable specifies its own regimes with breakpoints
+   - Variables can have different numbers of regimes
+   - Variables transition at different times
+   - `global_settings` must NOT be present
+
+2. **`global`**: All variables synchronized
+   - All variables share the same regime breakpoints
+   - `global_settings.breakpoints` or `global_settings.stochastic_breakpoints` required
+   - Variables only specify distributions (override templates)
+   - If variable has no local distributions, uses `distribution_templates`
+
+3. **`hybrid`**: Global by default, local override allowed
+   - Default: uses global breakpoints like "global" mode
+   - Override: variables with local breakpoints use their own schedule
+   - Flexible mix of synchronized and independent variables
+
+### Variable Definitions
+
+All market variables are defined in the `variables` section. **Required variables:** `fuel.coal` and `fuel.gas` must always be defined.
+
+#### Variable Naming Convention
 
 | Variable Pattern | Description | Example |
 |-----------------|-------------|---------|
 | `fuel.<tech>` | Fuel prices ($/unit) | `fuel.gas`, `fuel.coal` |
 | `cap.<tech>` | Installed capacity (MW) | `cap.nuclear`, `cap.wind` |
 | `avail.<tech>` | Availability factor (0-1) | `avail.coal`, `avail.gas` |
-| `eta_lb.<tech>`, `eta_ub.<tech>` | Thermal efficiency bounds | `eta_lb.gas`, `eta_ub.coal` |
-| `bid.<tech>.min`, `bid.<tech>.max` | Bid price ranges | `bid.nuclear.min` |
+| `eta_lb.<tech>` | Lower efficiency bound | `eta_lb.gas` = 0.48 |
+| `eta_ub.<tech>` | Upper efficiency bound | `eta_ub.coal` = 0.38 |
+| `bid.<tech>.min` | Minimum bid price | `bid.nuclear.min` = -200 |
+| `bid.<tech>.max` | Maximum bid price | `bid.wind.max` = -50 |
 
-**Required variables**: `fuel.coal` and `fuel.gas` must always be defined.
+#### Technologies
+
+Supported technologies: `nuclear`, `coal`, `gas`, `wind`, `solar`
+
+#### Variable Structure
+
+```yaml
+variables:
+  # Example: Fuel price with regime transitions
+  fuel.gas:
+    regimes:
+      - name: "normal"              # Regime name (for tracking)
+        dist:                        # Distribution specification
+          kind: "normal"
+          mu: 30.0
+          sigma: 5.0
+          bounds: {low: 10.0, high: 100.0}  # Optional bounds
+        breakpoints:                 # Optional local breakpoints
+          - date: "2024-01-01"      # Regime starts on this date
+            transition_hours: 48     # Smooth transition window (hours BEFORE date)
+
+      - name: "crisis"
+        dist: {kind: "normal", mu: 85.0, sigma: 15.0}
+        breakpoints:
+          - date: "2024-05-01"
+            transition_hours: 168
+
+  # Example: Constant capacity
+  cap.nuclear:
+    regimes:
+      - name: "constant"
+        dist: {kind: "const", v: 6000.0}  # 6000 MW constant
+
+  # Example: Linear capacity change
+  cap.coal:
+    regimes:
+      - name: "declining"
+        dist:
+          kind: "linear"
+          start: 8000.0       # Starting value (MW)
+          slope: -0.114       # Change per hour (MW/hr)
+          bounds: {low: 0.0, high: 8000.0}
+        breakpoints:
+          - {date: "2024-01-01", transition_hours: 168}
+```
+
+**Breakpoints Behavior:**
+- `transition_hours`: Smooth blend window BEFORE the breakpoint date
+- Example: date="2024-05-01", transition_hours=168 (7 days)
+  - Regime 1 runs pure until 2024-04-24
+  - 2024-04-24 to 2024-05-01: gradual blend from Regime 1 → Regime 2
+  - Regime 2 runs pure from 2024-05-01 onward
 
 ### Distribution Types
 
-Variables are sampled from distributions within each regime:
+Each variable samples values from a distribution. Available types:
 
-- **`const`**: Constant value
-  ```yaml
-  dist: {kind: "const", v: 5000.0}
-  ```
+#### 1. Constant (`const`)
+Fixed value, no randomness.
 
-- **`normal`**: Normal distribution with optional bounds
-  ```yaml
-  dist: {kind: "normal", mu: 30.0, sigma: 5.0, bounds: {low: 10.0, high: 100.0}}
-  ```
+```yaml
+dist:
+  kind: "const"
+  v: 6000.0  # The constant value
+```
+**Use for**: Capacities that don't change, fixed parameters
 
-- **`beta`**: Beta distribution scaled to range
-  ```yaml
-  dist: {kind: "beta", alpha: 30, beta: 2, low: 0.90, high: 0.98}
-  ```
+#### 2. Normal (`normal`)
+Gaussian distribution with optional bounds.
 
-- **`uniform`**: Uniform distribution
-  ```yaml
-  dist: {kind: "uniform", low: 20.0, high: 40.0}
-  ```
+```yaml
+dist:
+  kind: "normal"
+  mu: 30.0           # Mean
+  sigma: 5.0         # Standard deviation
+  bounds:            # Optional: clamp values to range
+    low: 10.0
+    high: 100.0
+```
+**Use for**: Fuel prices, availability factors with natural variation
 
-- **`linear`**: Linear change over time (for capacity transitions)
-  ```yaml
-  dist: {kind: "linear", start: 8000.0, slope: -0.114, bounds: {low: 0.0, high: 8000.0}}
-  ```
+#### 3. Beta (`beta`)
+Beta distribution scaled to a specific range.
 
-### Regime Modes
+```yaml
+dist:
+  kind: "beta"
+  alpha: 30      # Shape parameter (higher = more concentrated)
+  beta: 2        # Shape parameter
+  low: 0.85      # Minimum value (scale lower bound)
+  high: 0.95     # Maximum value (scale upper bound)
+```
+**Use for**: Availability factors (naturally bounded 0-1), efficiency values
 
-Three modes control how regime transitions are coordinated:
+#### 4. Uniform (`uniform`)
+Uniform distribution over a range.
 
-1. **`local_only`**: Each variable defines its own breakpoints independently
-2. **`global`**: All variables transition together at synchronized breakpoints
-3. **`hybrid`**: Global synchronization by default, but variables can override locally
+```yaml
+dist:
+  kind: "uniform"
+  low: 20.0      # Minimum value
+  high: 40.0     # Maximum value
+```
+**Use for**: When all values in range are equally likely
+
+#### 5. Linear (`linear`)
+Deterministic linear change over time (NOT random).
+
+```yaml
+dist:
+  kind: "linear"
+  start: 8000.0       # Starting value at regime start
+  slope: -0.114       # Change per hour (can be negative)
+  bounds:             # Optional: clamp to range
+    low: 0.0
+    high: 8000.0
+```
+**Use for**: Gradual capacity changes, phase-outs, ramp-ups
+**Note**: Value = `start + slope * hours_from_regime_start`
+
+#### 6. Empirical (`empirical`)
+Load values from empirical time series data.
+
+```yaml
+dist:
+  kind: "empirical"
+  series_name: "historical_gas_prices"  # Must match key in empirical_series
+```
+**Requires**: Corresponding entry in `empirical_series` section (see below)
 
 ### Renewable Availability Modes
 
-Two options for modeling wind and solar availability:
+Controls how wind and solar availability is modeled. This is a **top-level parameter**:
 
-1. **`weather_simulation`** (default): Use built-in weather models
-   - Wind: AR(1) autoregressive model with persistence
-   - Solar: Sinusoidal daily pattern
+```yaml
+renewable_availability_mode: "weather_simulation"  # or "direct"
+```
 
-2. **`direct`**: Sample availability directly from regime distributions
-   - Requires `avail.wind` and `avail.solar` in variables
+#### Mode 1: `weather_simulation` (Recommended)
+
+Uses built-in weather models to generate realistic patterns:
+
+```yaml
+renewable_availability_mode: "weather_simulation"
+
+weather_simulation:
+  wind:
+    model: "ar1"  # AR(1) autoregressive process
+    params:
+      base_capacity_factor: 0.45  # Mean capacity factor (0-1)
+      persistence: 0.85           # Autocorrelation (0-1, higher = more persistent)
+      volatility: 0.15            # Hourly noise std dev
+
+  solar:
+    model: "sinusoidal"  # Deterministic daily pattern
+    params:
+      sunrise_hour: 6              # Hour sun rises (0-23)
+      sunset_hour: 20              # Hour sun sets (0-23)
+      peak_capacity_factor: 0.35  # Peak output (midday)
+```
+
+**When to use**: Default choice for realistic renewable patterns
+**Behavior**:
+- Wind: Persistent multi-day patterns with hourly fluctuations
+- Solar: Zero at night, sinusoidal curve during day
+**Note**: `avail.wind` and `avail.solar` NOT needed in `variables` section
+
+#### Mode 2: `direct`
+
+Sample wind/solar availability directly from distributions:
+
+```yaml
+renewable_availability_mode: "direct"
+
+variables:
+  avail.wind:
+    regimes:
+      - name: "variable"
+        dist: {kind: "beta", alpha: 20, beta: 5, low: 0.2, high: 0.8}
+
+  avail.solar:
+    regimes:
+      - name: "variable"
+        dist: {kind: "beta", alpha: 15, beta: 10, low: 0.0, high: 0.6}
+```
+
+**When to use**: Custom renewable patterns, specific distributions
+**Requires**: `avail.wind` and `avail.solar` must be defined in `variables` or `empirical_series`
+
+### Planned Outages
+
+Models seasonal maintenance outages for thermal and nuclear plants:
+
+```yaml
+planned_outages:
+  enabled: true      # Set false to disable outages entirely
+
+  months: [5, 6, 7, 8, 9]  # Months with outages (1=Jan, 12=Dec)
+  # Typical: May-September (summer maintenance)
+
+  # Reduction factors applied to availability during outage months
+  nuclear_reduction: 0.12   # 12% capacity reduction (e.g., 0.95 → 0.836)
+  coal_reduction: 0.10      # 10% reduction
+  gas_reduction: 0.08       # 8% reduction
+```
+
+**Behavior**: During specified months, availability factors are multiplied by `(1 - reduction)`:
+- Example: If `avail.nuclear = 0.95` and `nuclear_reduction = 0.12`
+- During outage months: `avail.nuclear_effective = 0.95 * (1 - 0.12) = 0.836`
+- Other months: `avail.nuclear_effective = 0.95` (unchanged)
+
+**Impact on Wind/Solar**: NOT affected by planned outages (only `nuclear`, `coal`, `gas`)
+
+### Empirical Series
+
+Load real-world time series data instead of sampling from distributions:
+
+```yaml
+empirical_series:
+  # Map variable name -> path to CSV file
+  fuel.gas: "data/historical_gas_prices.csv"
+  avail.wind: "data/wind_generation_2023.csv"
+  # Paths relative to config file location
+```
+
+**CSV Format Requirements:**
+- **Two-column format**: `timestamp, value`
+  - Column names: `ts`/`time`/`timestamp`/`datetime` for time, anything else for value
+- **Single-column format**: Just values (assumes implicit hourly index starting 2020-01-01)
+
+**Example CSV:**
+```csv
+timestamp,value
+2024-01-01 00:00,28.50
+2024-01-01 01:00,29.20
+2024-01-01 02:00,28.80
+```
+
+**Behavior**: When a variable uses empirical data, it OVERRIDES any regime distributions for that variable.
+
+### Output Configuration
+
+The `io` section controls output formats and locations:
+
+```yaml
+io:
+  # === OUTPUT LOCATION ===
+  out_dir: "outputs"               # Directory for output files
+  dataset_name: "my_scenario"      # Base name for files
+  version: "v1"                    # Version tag (appears in filename)
+
+  # === FILENAME OPTIONS ===
+  add_timestamp: true              # Append timestamp to filename
+  timestamp_fmt: "%Y_%m_%d_%H_%M"  # Timestamp format (Python strftime)
+  # Result: my_scenario_v1_2024_11_06_14_30.csv
+
+  # === OUTPUT FORMATS (all default to false except pickle) ===
+  save_pickle: true       # Python pickle (.pkl) - fastest, Python-only
+  save_csv: true          # CSV (.csv) - universal, large files
+  save_parquet: false     # Parquet (.parquet) - compressed, columnar
+  save_feather: false     # Feather (.feather) - fast, cross-language
+  save_excel: false       # Excel (.xlsx) - slow, row limit ~1M
+  save_preview_html: false  # HTML preview (first N rows)
+  save_meta: false        # JSON metadata (config snapshot)
+  save_head_csv: false    # CSV with first N rows only
+
+  head_rows: 200          # Rows for preview/head files (if enabled)
+```
+
+**Output Filename Pattern:**
+```
+{out_dir}/{dataset_name}_{version}_{timestamp}.{ext}
+```
+
+**Performance Tips:**
+- Use `pickle` for speed and Python compatibility
+- Use `parquet` for compressed storage and cross-language use
+- Avoid `excel` for large datasets (>1M rows)
+- Enable `save_meta` to preserve full config for reproducibility
+
+### Complete Configuration Example
+
+Here's a complete, annotated configuration showing all major features:
+
+```yaml
+# === TOP-LEVEL PARAMETERS ===
+start_ts: "2024-01-01 00:00"
+days: 365
+freq: "h"
+seed: 42
+price_grid: [-200, -100, -50, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 300]
+
+# === DEMAND ===
+demand:
+  inelastic: false
+  base_intercept: 200.0  # P = 200 - 0.006*Q
+  slope: -0.006
+  daily_seasonality: true
+  day_peak_hour: 14
+  day_amp: 0.25
+  weekend_drop: 0.10
+  annual_seasonality: true
+  winter_amp: 0.15
+  summer_amp: -0.10
+
+# === REGIME PLANNING ===
+supply_regime_planner:
+  mode: "local_only"  # Each variable has independent regimes
+
+# === VARIABLES ===
+variables:
+  # Required: Fuel prices with regime transitions
+  fuel.gas:
+    regimes:
+      - name: "normal"
+        dist: {kind: "normal", mu: 30.0, sigma: 5.0, bounds: {low: 10.0, high: 100.0}}
+        breakpoints: [{date: "2024-01-01", transition_hours: 48}]
+      - name: "crisis"
+        dist: {kind: "normal", mu: 85.0, sigma: 15.0, bounds: {low: 40.0, high: 150.0}}
+        breakpoints: [{date: "2024-05-01", transition_hours: 168}]
+      - name: "recovery"
+        dist: {kind: "normal", mu: 35.0, sigma: 6.0, bounds: {low: 15.0, high: 100.0}}
+        breakpoints: [{date: "2024-09-01", transition_hours: 168}]
+
+  fuel.coal:
+    regimes:
+      - name: "stable"
+        dist: {kind: "normal", mu: 25.0, sigma: 3.0, bounds: {low: 15.0, high: 60.0}}
+
+  # Capacities (constant or changing)
+  cap.nuclear:
+    regimes:
+      - {name: "constant", dist: {kind: "const", v: 6000.0}}
+
+  cap.coal:
+    regimes:
+      - name: "declining"
+        dist: {kind: "linear", start: 8000.0, slope: -0.114, bounds: {low: 0.0, high: 8000.0}}
+
+  cap.gas:
+    regimes:
+      - {name: "constant", dist: {kind: "const", v: 12000.0}}
+
+  cap.wind:
+    regimes:
+      - {name: "constant", dist: {kind: "const", v: 7000.0}}
+
+  cap.solar:
+    regimes:
+      - {name: "constant", dist: {kind: "const", v: 5000.0}}
+
+  # Availabilities (beta distributions for realism)
+  avail.nuclear:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "beta", alpha: 30, beta: 2, low: 0.90, high: 0.98}
+
+  avail.coal:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "beta", alpha: 25, beta: 3, low: 0.85, high: 0.95}
+
+  avail.gas:
+    regimes:
+      - name: "baseline"
+        dist: {kind: "beta", alpha: 28, beta: 2, low: 0.90, high: 0.98}
+
+  # Thermal efficiencies
+  eta_lb.coal:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: 0.33}}
+  eta_ub.coal:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: 0.38}}
+  eta_lb.gas:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: 0.48}}
+  eta_ub.gas:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: 0.55}}
+
+  # Renewable bids (negative for priority dispatch)
+  bid.nuclear.min:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: -200.0}}
+  bid.nuclear.max:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: -50.0}}
+  bid.wind.min:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: -200.0}}
+  bid.wind.max:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: -50.0}}
+  bid.solar.min:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: -200.0}}
+  bid.solar.max:
+    regimes:
+      - {name: "baseline", dist: {kind: "const", v: -50.0}}
+
+# === RENEWABLE AVAILABILITY ===
+renewable_availability_mode: "weather_simulation"
+weather_simulation:
+  wind:
+    model: "ar1"
+    params:
+      base_capacity_factor: 0.45
+      persistence: 0.85
+      volatility: 0.15
+  solar:
+    model: "sinusoidal"
+    params:
+      sunrise_hour: 6
+      sunset_hour: 20
+      peak_capacity_factor: 0.35
+
+# === PLANNED OUTAGES ===
+planned_outages:
+  enabled: true
+  months: [5, 6, 7, 8, 9]
+  nuclear_reduction: 0.12
+  coal_reduction: 0.10
+  gas_reduction: 0.08
+
+# === EMPIRICAL DATA (optional) ===
+empirical_series: {}  # Empty if not using empirical data
+
+# === OUTPUT ===
+io:
+  out_dir: "outputs"
+  dataset_name: "gas_crisis_scenario"
+  version: "v1"
+  add_timestamp: true
+  save_pickle: true
+  save_csv: true
+  save_meta: true
+```
+
+### Common Configuration Patterns
+
+#### Pattern 1: Simple Constant Scenario
+Minimal config with constant parameters (no regime changes):
+
+```yaml
+supply_regime_planner:
+  mode: "local_only"
+
+variables:
+  fuel.gas:
+    regimes:
+      - {name: "constant", dist: {kind: "const", v: 30.0}}
+  fuel.coal:
+    regimes:
+      - {name: "constant", dist: {kind: "const", v: 25.0}}
+  # ... all other variables with single constant regime
+```
+
+#### Pattern 2: Synchronized Regime Changes
+All variables transition together using global mode:
+
+```yaml
+supply_regime_planner:
+  mode: "global"
+  global_settings:
+    n_regimes: 3
+    breakpoints:
+      - {date: "2024-01-01", transition_hours: 48}
+      - {date: "2024-05-01", transition_hours: 168}
+      - {date: "2024-09-01", transition_hours: 168}
+    distribution_templates:
+      fuel.gas: {kind: "normal", mu: 30.0, sigma: 5.0}
+      fuel.coal: {kind: "normal", mu: 25.0, sigma: 3.0}
+
+variables:
+  # Only override distributions if different from template
+  fuel.gas:
+    regimes:
+      - {name: "low", dist: {kind: "normal", mu: 25.0, sigma: 4.0}}
+      - {name: "normal", dist: {kind: "normal", mu: 30.0, sigma: 5.0}}
+      - {name: "high", dist: {kind: "normal", mu: 40.0, sigma: 6.0}}
+```
+
+#### Pattern 3: Mix of Synchronized and Independent
+Use hybrid mode for flexibility:
+
+```yaml
+supply_regime_planner:
+  mode: "hybrid"
+  global_settings:
+    n_regimes: 2
+    breakpoints:
+      - {date: "2024-01-01", transition_hours: 48}
+      - {date: "2024-07-01", transition_hours: 168}
+
+variables:
+  # These use global breakpoints
+  fuel.gas:
+    regimes:
+      - {name: "low", dist: {kind: "normal", mu: 25.0, sigma: 4.0}}
+      - {name: "high", dist: {kind: "normal", mu: 50.0, sigma: 8.0}}
+
+  # This overrides with local breakpoints
+  cap.coal:
+    regimes:
+      - name: "stage1"
+        dist: {kind: "linear", start: 8000.0, slope: -0.1}
+        breakpoints: [{date: "2024-01-01", transition_hours: 168}]
+      - name: "stage2"
+        dist: {kind: "linear", start: 7000.0, slope: -0.2}
+        breakpoints: [{date: "2024-04-01", transition_hours: 168}]
+```
+
+### Configuration Validation & Troubleshooting
+
+**Common Errors and Solutions:**
+
+1. **"Missing required variable specs: ['fuel.coal', 'fuel.gas']"**
+   - **Cause**: Required fuel price variables not defined
+   - **Solution**: Always include `fuel.coal` and `fuel.gas` in `variables` section
+
+2. **"mode='global' requires global_settings to be specified"**
+   - **Cause**: Using global/hybrid mode without `global_settings`
+   - **Solution**: Add `global_settings` block with `n_regimes` and `breakpoints`
+
+3. **"direct mode requires ['avail.wind', 'avail.solar'] in variables or empirical_series"**
+   - **Cause**: Using `renewable_availability_mode: "direct"` without renewable availability data
+   - **Solution**: Either add `avail.wind`/`avail.solar` to `variables`, or switch to `weather_simulation` mode
+
+4. **Equilibrium not found / prices at grid boundaries**
+   - **Cause**: Price grid doesn't span actual price range
+   - **Solution**: Widen `price_grid` bounds (e.g., add -500, -1000 for renewable bids; 500, 1000 for scarcity)
+
+5. **Inelastic demand produces unexpected prices**
+   - **Cause**: Misunderstanding of `base_intercept` meaning
+   - **Solution**: When `inelastic=true`, `base_intercept` is the QUANTITY level, not price
+   - Seasonality multipliers apply: `effective_demand = base_intercept * daily_mult * annual_mult`
+
+6. **Regime transitions too abrupt**
+   - **Cause**: `transition_hours` too small
+   - **Solution**: Increase `transition_hours` (e.g., 168 = 7 days for smooth blend)
+
+7. **Variables have different number of regimes**
+   - **Cause**: Expected in `local_only` mode; error in `global` mode
+   - **Solution**:
+     - `local_only`: This is normal behavior
+     - `global`: All variables must have same number of regimes (set by `n_regimes`)
+     - `hybrid`: Variables without local breakpoints use global; others independent
 
 ### Example Scenarios
 
-Check the `configs/` directory for examples:
+Check the `configs/` directory for working examples:
 
 - **`1_gas_crisis.yaml`**: Gas price spike scenario (365 days)
 - **`2_coal_phaseout.yaml`**: Gradual coal retirement over 5 years
 - **`_base_template.yaml`**: Fully documented template with all options
+- **`example_global_mode.yaml`**: Global regime synchronization
+- **`example_hybrid_mode.yaml`**: Hybrid mode with selective overrides
+- **`example_direct_renewable_avail_mode.yaml`**: Direct renewable sampling
 
 ## Package Architecture
 
