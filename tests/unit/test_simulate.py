@@ -284,15 +284,17 @@ class TestEquilibriumFinding:
 
         q_star, p_star = find_equilibrium(ts, demand, supply, vals, price_grid)
 
-        # With low choke price (50) and excess renewable supply,
-        # price can go negative when renewables have negative bids
-        # This is common in real energy markets with high renewable penetration
+        # With low choke price (50) and limited cheap supply (renewables + nuclear),
+        # equilibrium settles where demand intersects the flat supply segment
+        # After fuel price bug fix, thermal plants correctly bid at marginal cost (~55-76)
+        # so they don't produce at low prices
         print(f"\nLow demand equilibrium: P={p_star:.2f}, Q={q_star:.0f}")
-        
-        # Price should be well below the choke price (low demand scenario)
-        assert p_star < demand_cfg.base_intercept * 0.5, f"Price {p_star} should be well below choke price {demand_cfg.base_intercept}"
-        
-        # Price must be within grid bounds (can be negative!)
+
+        # Price should be below the choke price (low demand scenario)
+        # With ~10,600 MW of cheap renewables/nuclear, equilibrium is around P=28-30
+        assert p_star < demand_cfg.base_intercept * 0.7, f"Price {p_star} should be below choke price {demand_cfg.base_intercept}"
+
+        # Price must be within grid bounds (can be negative in high renewable scenarios!)
         assert price_grid[0] <= p_star <= price_grid[-1], f"Price {p_star} outside grid bounds"
 
     def test_equilibrium_at_price_ceiling(self):

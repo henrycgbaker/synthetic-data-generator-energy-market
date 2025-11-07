@@ -105,17 +105,16 @@ CRITICAL PROBLEMS
 - [x] in the gas crisis scenario, the resulting df doesn't have all the regimes, it just has normal and then crisis, no post crisis. is this because of the dates of the first breakpoint is the same as the start date? still I don't know why it would do that.
 diagnose the problems, without making any edits to files, just identify the bugs
 
-
 FROM VALIDATION NOTEBOOK
 - [x] correct the time series cross section curve
 - [x] why is avail.nuclear etc changing with regime??? This looks like faulty behaviour
 - [x] also, shouldn't all the availabilities decrease with planned outage?
 - ^^^ is it that the planned outages happen to be occuring at the same time as the regime changes?????
-- [ ] change tech colours to be more distinguished from eachother!
+- [x] change tech colours to be more distinguished from eachother!
 - [x] need to add multiple regimes in the coal phaseout case
-- [ ] solar goes from 0 -> 0.35 ==> what's a more appropriate bound ? 0->1?
-- [ ] wind avail also very low -> hovering around 0.5 -> change to more appopriate mean
-- [ ] in validate_scenario.ipynb, the market price barely changes (but it's the same data as in the other notebooks where it does change!) --> why???
+- [x] solar goes from 0 -> 0.35 ==> what's a more appropriate bound ? 0->1?
+- [x] wind avail also very low -> hovering around 0.5 -> change to more appopriate mean
+- [x] in validate_scenario.ipynb, the market price barely changes (but it's the same data as in the other notebooks where it does change!) --> why???
 
 TO DO (2nd order priority)
 - [x] write tests for & validate that CSV loaders work
@@ -124,11 +123,14 @@ TO DO (2nd order priority)
 - [x] make runners also available from root (not just within the synthetic_data dir)
 - [x] add nicer print out in the _execute() workflow, so it's nicer UX if run as an api call (`supply_curves run 3_gas_crisis`) - more explanatory print
 
+LAST REMAINING
+- [ ]
+
 FUTURE ENHANCEMENTS (2nd order priority):
 - [x] Unit test suite
 - [ ] add CO2 price as an input var
-- [ ] WRITE DOCUMENTAION!!!
-    - [ ] big pic what is each module doing
+- [x] WRITE DOCUMENTAION!!!
+    - [x] big pic what is each module doing
 - [ ] Import-export modeling
 --- import-export doesn't come for free, it comes at the price of the trade partners -> add a tech called 'trade', this is priced as an r.v., the Marginal cost of this is constant, it's just at the price of the neighbouring country.
 - [ ] wind sampling not properly implemeted if `weather_simulate`

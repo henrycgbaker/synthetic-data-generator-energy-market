@@ -71,38 +71,62 @@ def find_equilibrium(
     # First check if we're at boundary conditions
     p_min = float(price_grid[0])
     p_max = float(price_grid[-1])
-    
+
     q_demand_at_min = demand.q_at_price(p_min, ts)
     q_supply_at_min, _ = supply.supply_at(p_min, ts, vals)
-    
+
     # If supply exceeds demand even at minimum price, clip at floor
     # Add small tolerance for floating point comparison
     if q_supply_at_min >= q_demand_at_min * 0.999:
         return float(q_demand_at_min), p_min
-    
+
     q_demand_at_max = demand.q_at_price(p_max, ts)
     q_supply_at_max, _ = supply.supply_at(p_max, ts, vals)
-    
+
     # If demand exceeds supply even at maximum price, clip at ceiling
     if q_demand_at_max >= q_supply_at_max * 1.001:  # Small tolerance
         return float(q_supply_at_max), p_max
 
+    # PERFORMANCE: Pre-compute supply curve once to avoid rebuilding it for every brentq iteration
+    # This reduces computation from O(grid_size * brentq_iters) to O(grid_size)
+    supply_curve, _ = supply.curve_for_time(ts, vals, price_grid)
+
+    def supply_price_at_quantity_cached(q: float) -> float:
+        """Fast inverse supply lookup using pre-computed curve"""
+        idx = np.searchsorted(supply_curve, q, side="left")
+        if idx == 0:
+            return float(price_grid[0])
+        if idx >= len(price_grid):
+            return float(price_grid[-1])
+        q0, q1 = supply_curve[idx - 1], supply_curve[idx]
+        p0, p1 = price_grid[idx - 1], price_grid[idx]
+        if q1 == q0:
+            return float(p1)
+        w = (q - q0) / (q1 - q0)
+        return float(p0 * (1 - w) + p1 * w)
+
     def f(q):
-        ps = supply.supply_price_at_quantity(q, ts, vals, price_grid)
+        ps = supply_price_at_quantity_cached(q)
         pdq = demand.p_at_quantity(q, ts)
         return ps - pdq
 
     try:
         # Find equilibrium quantity where supply price = demand price
-        q_min = max(0.0, min(q_supply_at_min, q_demand_at_min) * 0.9)
-        q_max = min(q_supply_at_max, q_demand_at_max) * 1.1
-        
+        # Search bounds: equilibrium must be between 0 and min(max_supply, max_demand)
+        # Max demand occurs at lowest price, max supply at highest price
+        q_min = 0.0
+        q_max = min(q_supply_at_max, q_demand_at_min) * 1.1
+
         # Ensure valid bounds
-        if q_max <= q_min:
-            # Edge case: return midpoint
-            q_star = (q_supply_at_max + q_demand_at_max) / 2
-            p_star = demand.p_at_quantity(q_star, ts)
-            return float(q_star), float(p_star)
+        if q_max <= q_min or q_max <= 0:
+            # Edge case: demand or supply is essentially zero
+            # Return boundary condition
+            if q_demand_at_min > q_supply_at_max * 0.8:
+                # Demand exceeds supply -> ceiling
+                return float(q_supply_at_max), p_max
+            else:
+                # Supply exceeds demand -> floor
+                return float(q_demand_at_min), p_min
         
         q_star = brentq(f, q_min, q_max, maxiter=300)
         p_star = demand.p_at_quantity(q_star, ts)
