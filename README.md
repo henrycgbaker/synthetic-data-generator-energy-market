@@ -77,22 +77,25 @@ generate --help
 
 ### Running a Scenario
 
+RECOMMENDED: CLI tool
+
 The package provides a `generate` command-line tool. Use `generate run` followed by the path to a configuration file:
 
 ```bash
-# RECOMMENDED: CLI 
-
 # Run a pre-configured scenario (recommended way to get started)
 generate run configs/1_gas_crisis.yaml
 
-# The command accepts relative paths from your current directory
+# The command also accepts relative paths from your current directory
 generate run configs/2_coal_phaseout.yaml
 
 # Or absolute paths
 generate run /path/to/my/custom_scenario.yaml
 ```
+
+Alternatively, you can run python files directly, using prepared runner scripts.
+
 ```bash
-# Alternative: use the runner scripts (BUT inferior UI to CLI)
+# Alternative: use the runner scripts 
 python runners/run_scenario1_gas_crisis.py
 python runners/run_scenario2_coal_phaseout.py
 
@@ -100,7 +103,7 @@ python runners/run_scenario2_coal_phaseout.py
 python runners/run_all_scenarios.py
 ```
 
-This will generate synthetic market data and save it to the `outputs/` directory.
+Both, will generate synthetic market data and save it to the `outputs/` directory.
 
 **Key Command Format:** `generate run <config_file_path>`
 
@@ -135,6 +138,8 @@ price_grid: [-100, -50, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 150, 20
 ```
 
 ### Demand Configuration
+
+Demand in this modelling package is considered to be exogeneously given (as its intended purpose is to produce synthetic data for testing a dynamic clustering algorithm for identifying regime shifts within the energy supply curve). As such, the demand configs are relatively simplistic, whereas supply is much more developed.
 
 The `demand` section controls the demand curve and seasonality patterns:
 
@@ -184,7 +189,9 @@ demand:
 
 ### Supply Regime Planner
 
-Controls how regime transitions are coordinated across variables:
+Supply-side modelling is much more developed, this is the primary focus of this package.
+
+The Supply Regime Planner controls how regime transitions are coordinated across variables:
 
 ```yaml
 supply_regime_planner:
