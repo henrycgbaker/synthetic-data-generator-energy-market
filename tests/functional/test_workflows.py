@@ -27,7 +27,6 @@ class TestRunnerScripts:
             capture_output=True,
             text=True,
             timeout=300,  # 5 minutes
-            timeout=300,  # 5 minutes
         )
 
         # Check it ran without error
@@ -46,7 +45,6 @@ class TestRunnerScripts:
             capture_output=True,
             text=True,
             timeout=300,  # 5 minutes
-            timeout=300,  # 5 minutes
         )
 
         assert result.returncode == 0, f"Script failed: {result.stderr}"
@@ -61,7 +59,6 @@ class TestRunnerScripts:
             cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             capture_output=True,
             text=True,
-            timeout=300,  # 5 minutes
             timeout=300,  # 5 minutes
         )
 

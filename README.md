@@ -24,10 +24,11 @@ A Python package for generating realistic synthetic electricity market time seri
     * [Renewable Availability Modes](#renewable-availability-modes)
     * [Empirical Series](#empirical-series)
     * [Output Configuration](#output-configuration)
-    * [Complete Configuration Example](#complete-configuration-example)
-    * [Common Configuration Patterns](#common-configuration-patterns)
-    * [Configuration Validation & Troubleshooting](#configuration-validation--troubleshooting)
-    * [Example Scenarios](#example-scenarios)
+    * [Example Configurations](#example-configurations)
+      * [A Complete Configuration Example](#complete-configuration-example)
+      * [Common Configuration Patterns](#common-configuration-patterns)
+      * [Configuration Validation & Troubleshooting](#configuration-validation--troubleshooting)
+      * [Example Scenarios](#example-scenarios)
   * [Package Architecture](#package-architecture)
     * [Core Modules](#core-modules)
     * [How It Works](#how-it-works)
@@ -60,7 +61,7 @@ cd <repo path>
 2. Install the package in editable mode with development dependencies:
 ```bash
 # after activating venv
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 This installs the package and all dependencies, including testing and linting tools.
@@ -70,9 +71,6 @@ This installs the package and all dependencies, including testing and linting to
 ```bash
 # Check that the CLI is available
 generate --help
-
-# Run the test suite
-make test
 ```
 
 ## Quick Start
@@ -552,7 +550,9 @@ io:
 - Avoid `excel` for large datasets (>1M rows)
 - Enable `save_meta` to preserve full config for reproducibility
 
-### Complete Configuration Example
+## Example Configurations
+
+### A Complete Configuration Example
 
 Here's a complete, annotated configuration showing all major features:
 
@@ -882,6 +882,15 @@ Market clearing uses Brent's method to find the price where:
 Edge cases (demand too low/high) are handled by clamping to price grid bounds.
 
 ## Development
+
+### Installing as a developer
+
+Install the package in editable mode with optional development dependencies.
+
+```bash
+pip install -e ".[dev]"
+```
+This installs the package and all dependencies, including testing and linting tools.
 
 ### Running Tests
 

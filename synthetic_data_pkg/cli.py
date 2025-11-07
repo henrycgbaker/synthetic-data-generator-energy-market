@@ -17,7 +17,7 @@ from .runner import execute_scenario
 app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
-    help="Synthetic Energy Market Data Generator - Generate realistic electricity market time series"
+    help="Synthetic Energy Market Data Generator w/ Regime Changes - model electricity market time series with specied regime changes"
 )
 
 
