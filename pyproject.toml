@@ -43,7 +43,7 @@ where = ["."]
 include = ["synthetic_data_pkg*"]
 
 [project.scripts]
-generate = "synthetic_data_pkg.cli:entrypoint"
+synth-data = "synthetic_data_pkg.cli:entrypoint"
 
 [tool.black]
 line-length = 88

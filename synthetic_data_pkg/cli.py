@@ -21,7 +21,7 @@ app = typer.Typer(
 )
 
 
-@app.command("run")
+@app.command("generate", help="Run a market simulation from a configuration file")
 def run_cmd(
     config: str = typer.Argument(
         ...,
@@ -33,9 +33,27 @@ def run_cmd(
     Run a market simulation from a configuration file.
 
     Examples:
-        generate run configs/1_gas_crisis.yaml
-        generate run /path/to/my_scenario.yaml
-        generate run my_scenario  # Auto-detects .yaml extension
+        synth-data generate configs/1_gas_crisis.yaml
+        synth-data generate /path/to/my_scenario.yaml
+        synth-data generate my_scenario  # Auto-detects .yaml extension
+    """
+    execute_scenario(config)
+    
+@app.command("run", help="Run a market simulation from a configuration file")
+def run_cmd(
+    config: str = typer.Argument(
+        ...,
+        help="Relative or absolute path to YAML/JSON config file (e.g., configs/1_gas_crisis.yaml)",
+        metavar="CONFIG_PATH"
+    )
+):
+    """
+    Run a market simulation from a configuration file.
+
+    Examples:
+        synth-data run configs/1_gas_crisis.yaml
+        synth-data run /path/to/my_scenario.yaml
+        synth-data run my_scenario  # Auto-detects .yaml extension
     """
     execute_scenario(config)
 

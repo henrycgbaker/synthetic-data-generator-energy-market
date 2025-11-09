@@ -83,14 +83,16 @@ The package provides a `generate` command-line tool. Use `generate run` followed
 
 ```bash
 # Run a pre-configured scenario (recommended way to get started)
-generate run configs/1_gas_crisis.yaml
+synth-data generate configs/1_gas_crisis.yaml
 
 # The command also accepts relative paths from your current directory
-generate run configs/2_coal_phaseout.yaml
+synth-data generate configs/2_coal_phaseout.yaml
 
 # Or absolute paths
-generate run /path/to/my/custom_scenario.yaml
+synth-data generate /path/to/my/custom_scenario.yaml
 ```
+
+**NB: `run` command also works.* 
 
 Alternatively, you can run python files directly, using prepared runner scripts.
 
