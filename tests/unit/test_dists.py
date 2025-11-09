@@ -154,14 +154,15 @@ class TestStatefulStep:
 
         # Start far from mean
         vals = [100.0]
-        for _ in range(200):  # More steps for better convergence
+        for _ in range(500):  # More steps for better convergence
             vals.append(stateful_step(rng, prev=vals[-1], spec=spec))
 
         # Should trend back towards mean
-        assert vals[-1] < vals[0]
-        # Average of last 50 values should be close to mean
-        assert np.mean(vals[-50:]) > 35.0  # More lenient bound
-        assert np.mean(vals[-50:]) < 65.0
+        assert vals[-1] < vals[0], "Should trend back from 100 towards 50"
+        
+        # Average of last 100 values should be close to mean (tighter bounds)
+        mean_last_100 = np.mean(vals[-100:])
+        assert 42.0 < mean_last_100 < 58.0, f"Mean {mean_last_100} should be within ±8 of 50"
 
     def test_random_walk_initialization(self, rng):
         """Test random walk initialization"""

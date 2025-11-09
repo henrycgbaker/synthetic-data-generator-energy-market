@@ -306,3 +306,202 @@ class TestLinearDistribution:
             if prev_val is not None:
                 assert val < prev_val, f"Hour {hour}: coal capacity should be decreasing"
             prev_val = val
+
+@pytest.mark.unit
+class TestLinearDistributionEdgeCases:
+    """Additional edge case tests for linear distribution"""
+
+    def test_linear_with_zero_slope(self):
+        """Test that slope=0 behaves like const distribution"""
+        start_ts = pd.Timestamp("2024-01-01")
+        rng = np.random.default_rng(42)
+
+        segments = [
+            {
+                "name": "flat",
+                "days": 10,
+                "dist": {"kind": "linear", "start": 100.0, "slope": 0.0},
+                "transition_hours": 0,
+            }
+        ]
+
+        schedule = RegimeSchedule(
+            varname="test_var",
+            start_ts=start_ts,
+            freq="h",
+            segments=segments,
+            rng=rng,
+            series_map={},
+        )
+
+        # Sample at different times - should all be 100.0
+        for hour in [0, 10, 50, 100, 200]:
+            ts = start_ts + pd.Timedelta(hours=hour)
+            val, _ = schedule.value_at(ts)
+            assert val == pytest.approx(100.0, abs=0.1), f"Slope=0 should be constant at hour {hour}"
+
+    def test_linear_with_very_large_positive_slope(self):
+        """Test linear with very large positive slope"""
+        start_ts = pd.Timestamp("2024-01-01")
+        rng = np.random.default_rng(42)
+
+        segments = [
+            {
+                "name": "rapid_growth",
+                "days": 100,
+                "dist": {"kind": "linear", "start": 1000.0, "slope": 100.0},
+                "transition_hours": 0,
+            }
+        ]
+
+        schedule = RegimeSchedule(
+            varname="test_var",
+            start_ts=start_ts,
+            freq="h",
+            segments=segments,
+            rng=rng,
+            series_map={},
+        )
+
+        # Check values grow rapidly
+        ts_0 = start_ts
+        ts_100 = start_ts + pd.Timedelta(hours=100)
+
+        val_0, _ = schedule.value_at(ts_0)
+        val_100, _ = schedule.value_at(ts_100)
+
+        assert val_0 == pytest.approx(1000.0, abs=1.0)
+        assert val_100 == pytest.approx(11000.0, abs=1.0)  # 1000 + 100*100
+
+    def test_linear_with_very_large_negative_slope(self):
+        """Test linear with very large negative slope"""
+        start_ts = pd.Timestamp("2024-01-01")
+        rng = np.random.default_rng(42)
+
+        segments = [
+            {
+                "name": "rapid_decline",
+                "days": 100,
+                "dist": {"kind": "linear", "start": 50000.0, "slope": -100.0},
+                "transition_hours": 0,
+            }
+        ]
+
+        schedule = RegimeSchedule(
+            varname="test_var",
+            start_ts=start_ts,
+            freq="h",
+            segments=segments,
+            rng=rng,
+            series_map={},
+        )
+
+        # Check values decline rapidly
+        ts_0 = start_ts
+        ts_100 = start_ts + pd.Timedelta(hours=100)
+
+        val_0, _ = schedule.value_at(ts_0)
+        val_100, _ = schedule.value_at(ts_100)
+
+        assert val_0 == pytest.approx(50000.0, abs=1.0)
+        assert val_100 == pytest.approx(40000.0, abs=1.0)  # 50000 - 100*100
+
+    def test_linear_with_negative_starting_value(self):
+        """Test linear distribution starting at negative value"""
+        start_ts = pd.Timestamp("2024-01-01")
+        rng = np.random.default_rng(42)
+
+        segments = [
+            {
+                "name": "from_negative",
+                "days": 10,
+                "dist": {"kind": "linear", "start": -100.0, "slope": 5.0},
+                "transition_hours": 0,
+            }
+        ]
+
+        schedule = RegimeSchedule(
+            varname="test_var",
+            start_ts=start_ts,
+            freq="h",
+            segments=segments,
+            rng=rng,
+            series_map={},
+        )
+
+        ts_0 = start_ts
+        ts_50 = start_ts + pd.Timedelta(hours=50)
+
+        val_0, _ = schedule.value_at(ts_0)
+        val_50, _ = schedule.value_at(ts_50)
+
+        assert val_0 == pytest.approx(-100.0, abs=0.1)
+        assert val_50 == pytest.approx(150.0, abs=0.1)  # -100 + 5*50
+
+    def test_linear_bounds_violation_with_large_slope(self):
+        """Test that bounds are enforced even with large slope"""
+        start_ts = pd.Timestamp("2024-01-01")
+        rng = np.random.default_rng(42)
+
+        segments = [
+            {
+                "name": "rapid_bounded",
+                "days": 10,
+                "dist": {
+                    "kind": "linear",
+                    "start": 0.0,
+                    "slope": 1000.0,  # Very large
+                    "bounds": {"low": -100.0, "high": 500.0}
+                },
+                "transition_hours": 0,
+            }
+        ]
+
+        schedule = RegimeSchedule(
+            varname="test_var",
+            start_ts=start_ts,
+            freq="h",
+            segments=segments,
+            rng=rng,
+            series_map={},
+        )
+
+        # Even with large slope, should respect bounds
+        for hour in [0, 1, 2, 5, 10, 20, 50, 100]:
+            ts = start_ts + pd.Timedelta(hours=hour)
+            val, _ = schedule.value_at(ts)
+            assert -100.0 <= val <= 500.0, f"Hour {hour}: value {val} violates bounds"
+
+    def test_linear_numerical_precision_with_small_slope(self):
+        """Test numerical precision with very small slope"""
+        start_ts = pd.Timestamp("2024-01-01")
+        rng = np.random.default_rng(42)
+
+        segments = [
+            {
+                "name": "tiny_growth",
+                "days": 1000,
+                "dist": {"kind": "linear", "start": 5000.0, "slope": 0.0001},
+                "transition_hours": 0,
+            }
+        ]
+
+        schedule = RegimeSchedule(
+            varname="test_var",
+            start_ts=start_ts,
+            freq="h",
+            segments=segments,
+            rng=rng,
+            series_map={},
+        )
+
+        # Over 1000 hours, should increase by 0.1
+        ts_0 = start_ts
+        ts_1000 = start_ts + pd.Timedelta(hours=1000)
+
+        val_0, _ = schedule.value_at(ts_0)
+        val_1000, _ = schedule.value_at(ts_1000)
+
+        assert val_0 == pytest.approx(5000.0, abs=0.01)
+        assert val_1000 == pytest.approx(5000.1, abs=0.01)
+        assert val_1000 > val_0, "Should still detect tiny increase"

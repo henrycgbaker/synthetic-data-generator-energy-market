@@ -135,7 +135,6 @@ class TestLoadSingleColumnCSV:
             # Create test CSV with ts and value columns
             df = pd.DataFrame({
                 'ts': pd.date_range('2024-01-01', periods=24, freq='h'),
-                'ts': pd.date_range('2024-01-01', periods=24, freq='h'),
                 'value': range(24),
             })
             df.to_csv(csv_path, index=False)

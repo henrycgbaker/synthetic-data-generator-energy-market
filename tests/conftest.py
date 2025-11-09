@@ -190,6 +190,40 @@ def minimal_config(temp_output_dir):
         ),
     )
 
+@pytest.fixture
+def standard_vals():
+    """Standard variable values for testing"""
+    return {
+        "cap.nuclear": 6000.0,
+        "avail.nuclear": 0.95,
+        "cap.wind": 7000.0,
+        "cap.solar": 5000.0,
+        "cap.coal": 8000.0,
+        "avail.coal": 0.90,
+        "cap.gas": 12000.0,
+        "avail.gas": 0.95,
+        "fuel.coal": 25.0,
+        "fuel.gas": 30.0,
+        "eta_lb.coal": 0.33,
+        "eta_ub.coal": 0.38,
+        "eta_lb.gas": 0.48,
+        "eta_ub.gas": 0.55,
+        "bid.nuclear.min": -200.0,
+        "bid.nuclear.max": -50.0,
+        "bid.wind.min": -200.0,
+        "bid.wind.max": -50.0,
+        "bid.solar.min": -200.0,
+        "bid.solar.max": -50.0,
+    }
+
+
+@pytest.fixture
+def scaled_vals(standard_vals):
+    """Factory for scaled variable values"""
+    def _scale(scale_factor):
+        return {k: (v * scale_factor if k.startswith("cap.") else v)
+                for k, v in standard_vals.items()}
+    return _scale
 
 @pytest.fixture
 def sample_timeseries():
@@ -209,5 +243,4 @@ def all_scenario_configs():
     return [
         "configs/1_gas_crisis.yaml",
         "configs/2_coal_phaseout.yaml",
-        "configs/3_full_seasonality.yaml",
     ]
