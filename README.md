@@ -45,45 +45,13 @@ A Python package for generating realistic synthetic electricity market time seri
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.11+ (Python 3.13 supported with workarounds)
-- Poetry (for dependency management)
-
-If you don't have Poetry installed:
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
-```
-
-### Install from Source
-
-1. Clone the repository:
-```bash
-git clone https://github.com/henrycgbaker/synthetic-data-generator-energy-market.git
-cd synthetic-data-generator-energy-market
-```
-
-2. Install the package and all dependencies using Poetry:
-```bash
-poetry install
-```
-
-This installs the package with all dependencies in your active Python environment (or creates a new virtual environment if none is active).
-
-### Verify Installation
-
-```bash
-# Check that the CLI is available
-synth-data --help
-```
+ See [INSTALL.md](INSTALL.md) for `poetry`-based installation guide and troubleshooting.
 
 ## Quick Start
 
 ### Running a Scenario
 
-RECOMMENDED: CLI tool
-
-The package provides a `synth-data` command-line tool. Use `synth-data generate` followed by the path to a configuration file:
+*RECOMMENDED:* The package provides a `synth-data` command-line tool. Use `synth-data generate` followed by the path to a configuration file:
 
 ```bash
 # Run a pre-configured scenario (recommended way to get started)
