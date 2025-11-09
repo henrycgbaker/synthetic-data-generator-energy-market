@@ -124,7 +124,8 @@ TO DO (2nd order priority)
 - [x] add nicer print out in the _execute() workflow, so it's nicer UX if run as an api call (`supply_curves run 3_gas_crisis`) - more explanatory print
 
 LAST REMAINING
-- [ ]
+- [ ] systematically look through tests -> make sure they are comrpehensive and cover realistic config settings (once Jorge reviewed yaml configs)
+- [ ] move over to poetry for package & dependency management
 
 FUTURE ENHANCEMENTS (2nd order priority):
 - [x] Unit test suite

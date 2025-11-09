@@ -131,7 +131,7 @@ class TestEquilibriumDiagnostics:
             print(f"  Thermal:   {thermal:7.1f} MW")
             print(f"  Breakdown: Nuclear={breakdown['nuclear']:.0f}, Wind={breakdown['wind']:.0f}, Solar={breakdown['solar']:.0f}, Coal={breakdown['coal']:.0f}, Gas={breakdown['gas']:.0f}")
 
-    @pytest.mark.skip(reason="Test needs review - thermal generation unexpectedly zero")
+    @pytest.mark.unit 
     def test_fuel_price_changes_with_thermal_marginal(self):
         """Test that prices change when fuel changes AND thermal is marginal"""
         config = TopConfig(
@@ -145,26 +145,25 @@ class TestEquilibriumDiagnostics:
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
-        
-        # Moderate demand to ensure thermal is marginal
-        # Standard form: P = 200 - 0.006*Q
+
+        # high demand to ensure thermal is needed
         demand_cfg = DemandConfig(
             inelastic=False,
-            base_intercept=200.0,  # Choke price
-            slope=-0.006,  # dP/dQ
+            base_intercept=300.0,  # Increased from 200
+            slope=-0.004,  # Less elastic to maintain high demand
             daily_seasonality=False,
             annual_seasonality=False,
         )
         demand = DemandCurve(demand_cfg)
-        
+
         base_vals = {
-            "cap.nuclear": 6000.0,
+            "cap.nuclear": 4000.0,  # Reduced to force thermal
             "avail.nuclear": 0.95,
-            "cap.wind": 7000.0,
-            "cap.solar": 5000.0,
-            "cap.coal": 8000.0,
+            "cap.wind": 4000.0,  # Reduced
+            "cap.solar": 3000.0,  # Reduced
+            "cap.coal": 10000.0,  # Increased
             "avail.coal": 0.90,
-            "cap.gas": 12000.0,
+            "cap.gas": 15000.0,  # Increased
             "avail.gas": 0.95,
             "eta_lb.coal": 0.33,
             "eta_ub.coal": 0.38,
@@ -177,53 +176,48 @@ class TestEquilibriumDiagnostics:
             "bid.solar.min": -200.0,
             "bid.solar.max": -50.0,
         }
-        
+
         ts = pd.Timestamp("2024-01-01 12:00")
-        price_grid = np.array(list(range(-100, 201, 10)), dtype=float)
-        
-        print("\n\nFuel price sensitivity test:")
-        
+        price_grid = np.array(list(range(-100, 301, 10)), dtype=float)  # Extended range
+
         # Test with different fuel prices
-        fuel_prices = [
+        fuel_scenarios = [
             (20.0, 15.0, "Low fuel"),
-            (30.0, 25.0, "Medium fuel"),
-            (50.0, 40.0, "High fuel"),
-            (80.0, 60.0, "Very high fuel"),
+            (40.0, 30.0, "Medium fuel"),
+            (60.0, 45.0, "High fuel"),
         ]
-        
+
         results = []
-        for gas_price, coal_price, label in fuel_prices:
+        for gas_price, coal_price, label in fuel_scenarios:
             vals = base_vals.copy()
             vals["fuel.gas"] = gas_price
             vals["fuel.coal"] = coal_price
-            
+
             q_star, p_star = find_equilibrium(ts, demand, supply, vals, price_grid)
             _, breakdown = supply.supply_at(p_star, ts, vals)
-            
+
             thermal = breakdown["coal"] + breakdown["gas"]
-            renewable = breakdown["nuclear"] + breakdown["wind"] + breakdown["solar"]
-            
-            results.append((label, gas_price, coal_price, p_star, q_star, thermal, renewable))
-            
-            print(f"\n{label}: Gas=${gas_price:.1f}, Coal=${coal_price:.1f}")
+            results.append((label, gas_price, coal_price, p_star, q_star, thermal))
+
+            print(f"\n{label}: Gas=${gas_price}, Coal=${coal_price}")
             print(f"  Equilibrium: P=${p_star:6.1f}, Q={q_star:7.1f} MW")
             print(f"  Thermal: {thermal:7.1f} MW")
-            print(f"  Renewable: {renewable:7.1f} MW")
-        
-        # Verify thermal is actually running in MOST cases
-        # Note: at very high fuel prices, thermal may shut down entirely
-        for i, (label, _, _, _, _, thermal, _) in enumerate(results[:-1]):  # Skip last case
-            assert thermal > 5000, f"{label}: Thermal should be significant (>{5000} MW), got {thermal:.1f}"
-        
-        # Last case (very high fuel) may have zero thermal if renewables meet all demand
-        # This is economically correct behavior
-        
-        # Verify prices increase with fuel prices
+
+        # Verify thermal is running in ALL cases
+        for label, _, _, _, _, thermal in results:
+            assert thermal > 5000, f"{label}: Thermal {thermal} should be > 5000 MW"
+
+        # Verify prices INCREASE with fuel prices
         prices = [r[3] for r in results]
-        for i in range(1, len(prices)):
-            assert prices[i] >= prices[i-1], f"Price should increase with fuel costs: {prices[i]} < {prices[i-1]}"
-        
-        print(f"\n✓ Price increased from ${prices[0]:.1f} to ${prices[-1]:.1f} as fuel doubled")
+        assert prices[1] > prices[0], f"Medium fuel price should be > low: {prices[1]} vs {prices[0]}"
+        assert prices[2] > prices[1], f"High fuel price should be > medium: {prices[2]} vs {prices[1]}"
+
+        # Price increase should be substantial
+        price_increase = prices[2] - prices[0]
+        assert price_increase > 10, f"Price increase {price_increase} should be significant when fuel doubles"
+
+        print(f"\nPrice increased from ${prices[0]:.1f} to ${prices[2]:.1f} as fuel increased")
+    
 
     def test_demand_elasticity_impact(self):
         """Test how demand slope affects equilibrium"""
