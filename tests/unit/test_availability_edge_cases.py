@@ -343,7 +343,7 @@ class TestAvailabilityEdgeCases:
         ts = pd.Timestamp("2024-01-01 12:00")
 
         # At low price, nuclear should bid in fully (must-run)
-        price = -100.0
+        price = 0.0  # Above bid.nuclear.max (-50.0)
         total, breakdown = supply.supply_at(price, ts, vals)
 
         # Nuclear output should equal capacity * availability

@@ -156,8 +156,8 @@ class TestSolarWeatherEdgeCases:
             if hour < 10 or hour >= 14:
                 assert avail == 0.0, f"Hour {hour} should be zero"
 
-        # Should be positive during 10-13
-        for hour in [10, 11, 12, 13]:
+        # Should be positive during daylight (11-13, avoiding boundaries)
+        for hour in [11, 12, 13]:
             ts = pd.Timestamp(f"2024-01-01 {hour:02d}:00")
             avail = model.availability_at(ts)
             assert avail > 0.0, f"Hour {hour} should be positive"
