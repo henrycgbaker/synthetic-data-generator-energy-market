@@ -229,9 +229,7 @@ def load_single_column_csv(
         timestamps = timestamps.dt.tz_localize(None)
 
     s = pd.Series(
-        df[value_col_found].values,
-        index=timestamps,
-        name=Path(path).stem
+        df[value_col_found].values, index=timestamps, name=Path(path).stem
     ).sort_index()
 
     return s

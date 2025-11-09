@@ -47,30 +47,34 @@ A Python package for generating realistic synthetic electricity market time seri
 
 ### Prerequisites
 
-- Python 3.9 or higher
-- pip
+- Python 3.11+ (Python 3.13 supported with workarounds)
+- Poetry (for dependency management)
+
+If you don't have Poetry installed:
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
 
 ### Install from Source
 
 1. Clone the repository:
 ```bash
 git clone https://github.com/henrycgbaker/synthetic-data-generator-energy-market.git
-cd <repo path>
+cd synthetic-data-generator-energy-market
 ```
 
-2. Install the package in editable mode with development dependencies:
+2. Install the package and all dependencies using Poetry:
 ```bash
-# after activating venv
-pip install -e .
+poetry install
 ```
 
-This installs the package and all dependencies, including testing and linting tools.
+This installs the package with all dependencies in your active Python environment (or creates a new virtual environment if none is active).
 
 ### Verify Installation
 
 ```bash
 # Check that the CLI is available
-generate --help
+synth-data --help
 ```
 
 ## Quick Start
@@ -79,7 +83,7 @@ generate --help
 
 RECOMMENDED: CLI tool
 
-The package provides a `generate` command-line tool. Use `generate run` followed by the path to a configuration file:
+The package provides a `synth-data` command-line tool. Use `synth-data generate` followed by the path to a configuration file:
 
 ```bash
 # Run a pre-configured scenario (recommended way to get started)
@@ -92,7 +96,7 @@ synth-data generate configs/2_coal_phaseout.yaml
 synth-data generate /path/to/my/custom_scenario.yaml
 ```
 
-**NB: `run` command also works.* 
+**NB: `run` command also works: `synth-data run <config_file_path>`* 
 
 Alternatively, you can run python files directly, using prepared runner scripts.
 
@@ -107,7 +111,7 @@ python runners/run_all_scenarios.py
 
 Both, will generate synthetic market data and save it to the `outputs/` directory.
 
-**Key Command Format:** `generate run <config_file_path>`
+**Key Command Format:** `synth-data generate <config_file_path>`
 
 ### Output Files
 
@@ -892,14 +896,17 @@ Edge cases (demand too low/high) are handled by clamping to price grid bounds.
 
 ## Development
 
-### Installing as a developer
+### Setting Up Development Environment
 
-Install the package in editable mode with optional development dependencies.
+This project uses Poetry for dependency management. To set up your development environment:
 
 ```bash
-pip install -e ".[dev]"
+# Install all dependencies (including dev dependencies)
+poetry install
+
+# If using conda/venv, Poetry will install into your active environment
+# Otherwise, Poetry creates its own virtual environment
 ```
-This installs the package and all dependencies, including testing and linting tools.
 
 ### Running Tests
 

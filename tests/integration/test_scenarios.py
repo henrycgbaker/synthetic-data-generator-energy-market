@@ -4,12 +4,12 @@ Tests multiple components working together to generate synthetic data.
 """
 
 import os
-import tempfile
 
 import numpy as np
 import pandas as pd
 import pytest
 import yaml
+
 from synthetic_data_pkg.runner import execute_scenario
 from synthetic_data_pkg.scenario import build_schedules
 from synthetic_data_pkg.simulate import simulate_timeseries
@@ -459,7 +459,9 @@ class TestDemandSupplyEquilibrium:
 
         # All prices should be within grid bounds (continuous equilibrium)
         for p in prices:
-            assert price_min <= p <= price_max, f"Price {p} outside grid bounds [{price_min}, {price_max}]"
+            assert (
+                price_min <= p <= price_max
+            ), f"Price {p} outside grid bounds [{price_min}, {price_max}]"
 
     def test_quantity_cleared_is_positive(self, minimal_config):
         """Test that cleared quantity is always positive"""
@@ -502,4 +504,6 @@ class TestDemandSupplyEquilibrium:
 
         quantities = df["q_cleared"]
         # Check all quantities are non-negative (>= 0)
-        assert (quantities >= 0).all(), f"Found negative quantities: {quantities[quantities < 0]}"
+        assert (
+            quantities >= 0
+        ).all(), f"Found negative quantities: {quantities[quantities < 0]}"

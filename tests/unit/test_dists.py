@@ -6,6 +6,7 @@ Tests distribution sampling functions.
 import numpy as np
 import pandas as pd
 import pytest
+
 from synthetic_data_pkg.dists import _clamp, empirical_at, iid_sample, stateful_step
 
 
@@ -159,10 +160,12 @@ class TestStatefulStep:
 
         # Should trend back towards mean
         assert vals[-1] < vals[0], "Should trend back from 100 towards 50"
-        
+
         # Average of last 100 values should be close to mean (tighter bounds)
         mean_last_100 = np.mean(vals[-100:])
-        assert 42.0 < mean_last_100 < 58.0, f"Mean {mean_last_100} should be within ±8 of 50"
+        assert (
+            42.0 < mean_last_100 < 58.0
+        ), f"Mean {mean_last_100} should be within ±8 of 50"
 
     def test_random_walk_initialization(self, rng):
         """Test random walk initialization"""

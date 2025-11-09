@@ -5,7 +5,8 @@ Tests utility functions.
 
 import numpy as np
 import pytest
-from synthetic_data_pkg.utils import linear_ramp, random_partition, _clamp
+
+from synthetic_data_pkg.utils import _clamp, linear_ramp, random_partition
 
 
 @pytest.mark.unit
@@ -31,23 +32,23 @@ class TestLinearRamp:
         """Test output exactly at boundaries"""
         cap = 100.0
         p_low, p_high = 20.0, 30.0
-        
+
         result_low = linear_ramp(price=p_low, p_low=p_low, p_high=p_high, cap=cap)
         result_high = linear_ramp(price=p_high, p_low=p_low, p_high=p_high, cap=cap)
-        
+
         assert result_low == 0.0
         assert result_high == 100.0
 
     def test_linear_ramp_monotonic(self):
         """Test that output increases monotonically with price"""
         p_low, p_high, cap = 20.0, 30.0, 100.0
-        
+
         prices = [15, 20, 22, 25, 28, 30, 35]
         outputs = [linear_ramp(p, p_low, p_high, cap) for p in prices]
-        
+
         # Check monotonicity
         for i in range(1, len(outputs)):
-            assert outputs[i] >= outputs[i-1], f"Not monotonic at index {i}"
+            assert outputs[i] >= outputs[i - 1], f"Not monotonic at index {i}"
 
     def test_linear_ramp_with_zero_capacity(self):
         """Test with zero capacity"""
@@ -67,21 +68,21 @@ class TestClamp:
 
     def test_clamp_lower_bound(self):
         """Test clamping with lower bound"""
-        bounds = {'low': 0.0}
+        bounds = {"low": 0.0}
         assert _clamp(-10.0, bounds) == 0.0
         assert _clamp(10.0, bounds) == 10.0
         assert _clamp(0.0, bounds) == 0.0
 
     def test_clamp_upper_bound(self):
         """Test clamping with upper bound"""
-        bounds = {'high': 100.0}
+        bounds = {"high": 100.0}
         assert _clamp(150.0, bounds) == 100.0
         assert _clamp(50.0, bounds) == 50.0
         assert _clamp(100.0, bounds) == 100.0
 
     def test_clamp_both_bounds(self):
         """Test clamping with both bounds"""
-        bounds = {'low': 0.0, 'high': 100.0}
+        bounds = {"low": 0.0, "high": 100.0}
         assert _clamp(-10.0, bounds) == 0.0
         assert _clamp(150.0, bounds) == 100.0
         assert _clamp(50.0, bounds) == 50.0
@@ -102,7 +103,7 @@ class TestRandomPartition:
         rng = np.random.default_rng(42)
         total = 365
         partition = random_partition(total, N=5, min_segment=10, rng=rng)
-        
+
         assert sum(partition) == total
         assert len(partition) == 5
 
@@ -111,7 +112,7 @@ class TestRandomPartition:
         rng = np.random.default_rng(42)
         min_seg = 10
         partition = random_partition(365, N=5, min_segment=min_seg, rng=rng)
-        
+
         for seg in partition:
             assert seg >= min_seg, f"Segment {seg} below minimum {min_seg}"
 
@@ -119,7 +120,7 @@ class TestRandomPartition:
         """Test that all segments are positive"""
         rng = np.random.default_rng(42)
         partition = random_partition(100, N=10, min_segment=1, rng=rng)
-        
+
         for seg in partition:
             assert seg > 0
 
@@ -127,7 +128,7 @@ class TestRandomPartition:
         """Test with N=1 (single segment)"""
         rng = np.random.default_rng(42)
         partition = random_partition(100, N=1, min_segment=1, rng=rng)
-        
+
         assert len(partition) == 1
         assert partition[0] == 100
 
@@ -135,19 +136,19 @@ class TestRandomPartition:
         """Test that same seed produces same partition"""
         rng1 = np.random.default_rng(42)
         rng2 = np.random.default_rng(42)
-        
+
         partition1 = random_partition(365, N=5, min_segment=10, rng=rng1)
         partition2 = random_partition(365, N=5, min_segment=10, rng=rng2)
-        
+
         assert partition1 == partition2
 
     def test_random_partition_different_seeds(self):
         """Test that different seeds produce different partitions"""
         rng1 = np.random.default_rng(42)
         rng2 = np.random.default_rng(123)
-        
+
         partition1 = random_partition(365, N=5, min_segment=10, rng=rng1)
         partition2 = random_partition(365, N=5, min_segment=10, rng=rng2)
-        
+
         # Should be different (with very high probability)
         assert partition1 != partition2

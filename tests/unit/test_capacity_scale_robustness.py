@@ -6,10 +6,11 @@ Validates the system works for small municipal grids to large regional ISOs.
 import numpy as np
 import pandas as pd
 import pytest
-from synthetic_data_pkg.simulate import find_equilibrium
-from synthetic_data_pkg.demand import DemandCurve
-from synthetic_data_pkg.supply import SupplyCurve
+
 from synthetic_data_pkg.config import DemandConfig, TopConfig
+from synthetic_data_pkg.demand import DemandCurve
+from synthetic_data_pkg.simulate import find_equilibrium
+from synthetic_data_pkg.supply import SupplyCurve
 
 
 @pytest.mark.unit
@@ -34,12 +35,17 @@ class TestCapacityScales:
         base_demand = DemandCurve(base_demand_cfg)
 
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         base_supply = SupplyCurve(config, rng_seed=42)
@@ -71,7 +77,9 @@ class TestCapacityScales:
         price_grid = np.array(list(range(-100, 201, 10)), dtype=float)
 
         # Get baseline equilibrium
-        q_base, p_base = find_equilibrium(ts, base_demand, base_supply, base_vals, price_grid)
+        q_base, p_base = find_equilibrium(
+            ts, base_demand, base_supply, base_vals, price_grid
+        )
 
         # Scale scenario
         scaled_demand_cfg = DemandConfig(
@@ -85,10 +93,14 @@ class TestCapacityScales:
         scaled_supply = base_supply  # Same supply curve
 
         # Scale capacities
-        scaled_vals = {k: (v * scale_factor if k.startswith("cap.") else v)
-                       for k, v in base_vals.items()}
+        scaled_vals = {
+            k: (v * scale_factor if k.startswith("cap.") else v)
+            for k, v in base_vals.items()
+        }
 
-        q_scaled, p_scaled = find_equilibrium(ts, scaled_demand, scaled_supply, scaled_vals, price_grid)
+        q_scaled, p_scaled = find_equilibrium(
+            ts, scaled_demand, scaled_supply, scaled_vals, price_grid
+        )
 
         # Assertions
         assert not np.isnan(q_scaled), f"NaN quantity at scale {scale_factor}"
@@ -96,12 +108,14 @@ class TestCapacityScales:
 
         # Quantity should scale proportionally (within 10% due to discretization)
         expected_q = q_base * scale_factor
-        assert abs(q_scaled - expected_q) / expected_q < 0.15, \
-            f"Quantity scaling failed: expected {expected_q}, got {q_scaled} at scale {scale_factor}"
+        assert (
+            abs(q_scaled - expected_q) / expected_q < 0.15
+        ), f"Quantity scaling failed: expected {expected_q}, got {q_scaled} at scale {scale_factor}"
 
         # Price should remain similar (within 20% due to market structure)
-        assert abs(p_scaled - p_base) / max(abs(p_base), 1) < 0.25, \
-            f"Price changed too much: {p_base} -> {p_scaled} at scale {scale_factor}"
+        assert (
+            abs(p_scaled - p_base) / max(abs(p_base), 1) < 0.25
+        ), f"Price changed too much: {p_base} -> {p_scaled} at scale {scale_factor}"
 
     @pytest.mark.parametrize("capacity_mw", [10, 100, 1000, 10000, 100000, 1000000])
     def test_small_to_large_absolute_capacities(self, capacity_mw):
@@ -120,12 +134,17 @@ class TestCapacityScales:
         demand = DemandCurve(demand_cfg)
 
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -162,7 +181,9 @@ class TestCapacityScales:
         assert not np.isnan(q_star), f"Failed at capacity scale {capacity_mw} MW"
         assert not np.isnan(p_star), f"Failed at capacity scale {capacity_mw} MW"
         assert q_star > 0, f"Non-positive quantity at capacity {capacity_mw} MW"
-        assert q_star <= capacity_mw, f"Quantity {q_star} exceeds total capacity {capacity_mw}"
+        assert (
+            q_star <= capacity_mw
+        ), f"Quantity {q_star} exceeds total capacity {capacity_mw}"
 
 
 @pytest.mark.unit
@@ -171,16 +192,26 @@ class TestCapacityEdgeCases:
 
     def test_zero_thermal_capacity(self):
         """Test with zero thermal (coal + gas) capacity - renewables only"""
-        demand_cfg = DemandConfig(inelastic=False, base_intercept=200.0, slope=-0.006,
-                                   daily_seasonality=False, annual_seasonality=False)
+        demand_cfg = DemandConfig(
+            inelastic=False,
+            base_intercept=200.0,
+            slope=-0.006,
+            daily_seasonality=False,
+            annual_seasonality=False,
+        )
         demand = DemandCurve(demand_cfg)
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -223,16 +254,26 @@ class TestCapacityEdgeCases:
 
     def test_zero_renewable_capacity(self):
         """Test with zero renewable capacity - thermal only"""
-        demand_cfg = DemandConfig(inelastic=False, base_intercept=200.0, slope=-0.006,
-                                   daily_seasonality=False, annual_seasonality=False)
+        demand_cfg = DemandConfig(
+            inelastic=False,
+            base_intercept=200.0,
+            slope=-0.006,
+            daily_seasonality=False,
+            annual_seasonality=False,
+        )
         demand = DemandCurve(demand_cfg)
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -276,16 +317,26 @@ class TestCapacityEdgeCases:
 
     def test_extreme_capacity_ratios(self):
         """Test with extreme ratios between generation types (1:10000)"""
-        demand_cfg = DemandConfig(inelastic=False, base_intercept=200.0, slope=-0.006,
-                                   daily_seasonality=False, annual_seasonality=False)
+        demand_cfg = DemandConfig(
+            inelastic=False,
+            base_intercept=200.0,
+            slope=-0.006,
+            daily_seasonality=False,
+            annual_seasonality=False,
+        )
         demand = DemandCurve(demand_cfg)
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)

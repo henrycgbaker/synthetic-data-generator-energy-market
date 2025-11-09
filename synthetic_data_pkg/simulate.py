@@ -127,16 +127,16 @@ def find_equilibrium(
             else:
                 # Supply exceeds demand -> floor
                 return float(q_demand_at_min), p_min
-        
+
         q_star = brentq(f, q_min, q_max, maxiter=300)
         p_star = demand.p_at_quantity(q_star, ts)
         return float(q_star), float(p_star)
-    except (ValueError, RuntimeError) as e:
+    except (ValueError, RuntimeError):
         # Solver failed - return boundary condition
         # If demand is high relative to supply, hit ceiling
         if q_demand_at_max > q_supply_at_max * 0.8:
             return float(q_supply_at_max), p_max
-        # Otherwise hit floor  
+        # Otherwise hit floor
         return float(q_demand_at_min), p_min
 
 

@@ -6,12 +6,15 @@ Tests that market prices respond correctly to changes in fuel prices and capacit
 import numpy as np
 import pandas as pd
 import pytest
+
 from synthetic_data_pkg.config import DemandConfig, IOConfig, TopConfig
 from synthetic_data_pkg.scenario import build_schedules
 from synthetic_data_pkg.simulate import simulate_timeseries
 
 
-def _create_test_config(fuel_gas_price, fuel_coal_price, cap_gas, cap_coal, temp_dir, days=2):
+def _create_test_config(
+    fuel_gas_price, fuel_coal_price, cap_gas, cap_coal, temp_dir, days=2
+):
     """Helper to create test config"""
     return TopConfig(
         start_ts="2024-01-01 00:00",
@@ -28,26 +31,119 @@ def _create_test_config(fuel_gas_price, fuel_coal_price, cap_gas, cap_coal, temp
         ),
         supply_regime_planner={"mode": "local_only"},
         variables={
-            "fuel.gas": {"regimes": [{"name": "stable", "dist": {"kind": "const", "v": fuel_gas_price}}]},
-            "fuel.coal": {"regimes": [{"name": "stable", "dist": {"kind": "const", "v": fuel_coal_price}}]},
-            "cap.nuclear": {"regimes": [{"name": "constant", "dist": {"kind": "const", "v": 5000.0}}]},
-            "cap.coal": {"regimes": [{"name": "constant", "dist": {"kind": "const", "v": cap_coal}}]},
-            "cap.gas": {"regimes": [{"name": "constant", "dist": {"kind": "const", "v": cap_gas}}]},
-            "cap.wind": {"regimes": [{"name": "constant", "dist": {"kind": "const", "v": 4000.0}}]},
-            "cap.solar": {"regimes": [{"name": "constant", "dist": {"kind": "const", "v": 3000.0}}]},
-            "avail.nuclear": {"regimes": [{"name": "baseline", "dist": {"kind": "beta", "alpha": 30, "beta": 2, "low": 0.9, "high": 0.98}}]},
-            "avail.coal": {"regimes": [{"name": "baseline", "dist": {"kind": "beta", "alpha": 25, "beta": 3, "low": 0.85, "high": 0.95}}]},
-            "avail.gas": {"regimes": [{"name": "baseline", "dist": {"kind": "beta", "alpha": 28, "beta": 2, "low": 0.9, "high": 0.98}}]},
-            "eta_lb.coal": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": 0.33}}]},
-            "eta_ub.coal": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": 0.38}}]},
-            "eta_lb.gas": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": 0.48}}]},
-            "eta_ub.gas": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": 0.55}}]},
-            "bid.nuclear.min": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -200.0}}]},
-            "bid.nuclear.max": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -50.0}}]},
-            "bid.wind.min": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -200.0}}]},
-            "bid.wind.max": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -50.0}}]},
-            "bid.solar.min": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -200.0}}]},
-            "bid.solar.max": {"regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -50.0}}]},
+            "fuel.gas": {
+                "regimes": [
+                    {"name": "stable", "dist": {"kind": "const", "v": fuel_gas_price}}
+                ]
+            },
+            "fuel.coal": {
+                "regimes": [
+                    {"name": "stable", "dist": {"kind": "const", "v": fuel_coal_price}}
+                ]
+            },
+            "cap.nuclear": {
+                "regimes": [
+                    {"name": "constant", "dist": {"kind": "const", "v": 5000.0}}
+                ]
+            },
+            "cap.coal": {
+                "regimes": [
+                    {"name": "constant", "dist": {"kind": "const", "v": cap_coal}}
+                ]
+            },
+            "cap.gas": {
+                "regimes": [
+                    {"name": "constant", "dist": {"kind": "const", "v": cap_gas}}
+                ]
+            },
+            "cap.wind": {
+                "regimes": [
+                    {"name": "constant", "dist": {"kind": "const", "v": 4000.0}}
+                ]
+            },
+            "cap.solar": {
+                "regimes": [
+                    {"name": "constant", "dist": {"kind": "const", "v": 3000.0}}
+                ]
+            },
+            "avail.nuclear": {
+                "regimes": [
+                    {
+                        "name": "baseline",
+                        "dist": {
+                            "kind": "beta",
+                            "alpha": 30,
+                            "beta": 2,
+                            "low": 0.9,
+                            "high": 0.98,
+                        },
+                    }
+                ]
+            },
+            "avail.coal": {
+                "regimes": [
+                    {
+                        "name": "baseline",
+                        "dist": {
+                            "kind": "beta",
+                            "alpha": 25,
+                            "beta": 3,
+                            "low": 0.85,
+                            "high": 0.95,
+                        },
+                    }
+                ]
+            },
+            "avail.gas": {
+                "regimes": [
+                    {
+                        "name": "baseline",
+                        "dist": {
+                            "kind": "beta",
+                            "alpha": 28,
+                            "beta": 2,
+                            "low": 0.9,
+                            "high": 0.98,
+                        },
+                    }
+                ]
+            },
+            "eta_lb.coal": {
+                "regimes": [{"name": "baseline", "dist": {"kind": "const", "v": 0.33}}]
+            },
+            "eta_ub.coal": {
+                "regimes": [{"name": "baseline", "dist": {"kind": "const", "v": 0.38}}]
+            },
+            "eta_lb.gas": {
+                "regimes": [{"name": "baseline", "dist": {"kind": "const", "v": 0.48}}]
+            },
+            "eta_ub.gas": {
+                "regimes": [{"name": "baseline", "dist": {"kind": "const", "v": 0.55}}]
+            },
+            "bid.nuclear.min": {
+                "regimes": [
+                    {"name": "baseline", "dist": {"kind": "const", "v": -200.0}}
+                ]
+            },
+            "bid.nuclear.max": {
+                "regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -50.0}}]
+            },
+            "bid.wind.min": {
+                "regimes": [
+                    {"name": "baseline", "dist": {"kind": "const", "v": -200.0}}
+                ]
+            },
+            "bid.wind.max": {
+                "regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -50.0}}]
+            },
+            "bid.solar.min": {
+                "regimes": [
+                    {"name": "baseline", "dist": {"kind": "const", "v": -200.0}}
+                ]
+            },
+            "bid.solar.max": {
+                "regimes": [{"name": "baseline", "dist": {"kind": "const", "v": -50.0}}]
+            },
         },
         empirical_series={},
         planned_outages={"enabled": False},
@@ -61,7 +157,7 @@ def _create_test_config(fuel_gas_price, fuel_coal_price, cap_gas, cap_coal, temp
             save_meta=False,
         ),
     )
-    
+
 
 @pytest.mark.integration
 class TestPriceResponsiveness:
@@ -285,7 +381,9 @@ class TestPriceResponsiveness:
 
         # Check for NaN values
         if pd.isna(mean_price_low_cap) or pd.isna(mean_price_high_cap):
-            pytest.fail(f"NaN prices found: high_cap={mean_price_high_cap}, low_cap={mean_price_low_cap}")
+            pytest.fail(
+                f"NaN prices found: high_cap={mean_price_high_cap}, low_cap={mean_price_low_cap}"
+            )
 
         # Lower capacity should lead to higher prices (scarcity)
         assert (
@@ -344,7 +442,7 @@ class TestPriceResponsiveness:
 
         print(f"\nNight solar: {night_solar:.2f} MW")
         print(f"Day solar: {day_solar:.2f} MW")
-        print(f"\navail.solar at different hours:")
+        print("\navail.solar at different hours:")
         for hour in [0, 6, 12, 18, 23]:
             row = df[df["hour"] == hour].iloc[0]
             print(

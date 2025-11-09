@@ -6,9 +6,9 @@ Tests supply curve and weather models.
 import numpy as np
 import pandas as pd
 import pytest
+
 from synthetic_data_pkg.config import (
     TopConfig,
-    WeatherModelConfig,
     WeatherSimulationConfig,
 )
 from synthetic_data_pkg.supply import SolarWeatherModel, SupplyCurve, WindWeatherModel

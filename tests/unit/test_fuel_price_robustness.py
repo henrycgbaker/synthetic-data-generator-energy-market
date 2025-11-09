@@ -5,23 +5,27 @@ Test equilibrium behavior across different fuel price ranges and scenarios.
 import numpy as np
 import pandas as pd
 import pytest
-from synthetic_data_pkg.simulate import find_equilibrium
-from synthetic_data_pkg.demand import DemandCurve
-from synthetic_data_pkg.supply import SupplyCurve
+
 from synthetic_data_pkg.config import DemandConfig, TopConfig
+from synthetic_data_pkg.demand import DemandCurve
+from synthetic_data_pkg.simulate import find_equilibrium
+from synthetic_data_pkg.supply import SupplyCurve
 
 
 @pytest.mark.unit
 class TestFuelPriceRanges:
     """Test equilibrium with different fuel price ranges"""
 
-    @pytest.mark.parametrize("gas_price,coal_price", [
-        (1.0, 1.0),      # Very low
-        (10.0, 8.0),     # Low
-        (30.0, 25.0),    # Normal
-        (100.0, 80.0),   # High
-        (300.0, 250.0),  # Very high
-    ])
+    @pytest.mark.parametrize(
+        "gas_price,coal_price",
+        [
+            (1.0, 1.0),  # Very low
+            (10.0, 8.0),  # Low
+            (30.0, 25.0),  # Normal
+            (100.0, 80.0),  # High
+            (300.0, 250.0),  # Very high
+        ],
+    )
     def test_equilibrium_at_different_fuel_price_levels(self, gas_price, coal_price):
         """Test equilibrium finding across fuel price spectrum"""
         # Increase demand to ensure thermal is always needed
@@ -35,12 +39,21 @@ class TestFuelPriceRanges:
         demand = DemandCurve(demand_cfg)
 
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": gas_price}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": coal_price}}]},
+                "fuel.gas": {
+                    "regimes": [
+                        {"name": "s", "dist": {"kind": "const", "v": gas_price}}
+                    ]
+                },
+                "fuel.coal": {
+                    "regimes": [
+                        {"name": "s", "dist": {"kind": "const", "v": coal_price}}
+                    ]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -69,14 +82,22 @@ class TestFuelPriceRanges:
         }
 
         ts = pd.Timestamp("2024-01-01 12:00")
-        price_grid = np.array(list(range(-100, 701, 10)), dtype=float)  # Extended for high fuel prices
+        price_grid = np.array(
+            list(range(-100, 701, 10)), dtype=float
+        )  # Extended for high fuel prices
 
         q_star, p_star = find_equilibrium(ts, demand, supply, vals, price_grid)
 
         # Should find equilibrium at all fuel price levels
-        assert not np.isnan(q_star), f"NaN quantity at gas=${gas_price}, coal=${coal_price}"
-        assert not np.isnan(p_star), f"NaN price at gas=${gas_price}, coal=${coal_price}"
-        assert q_star > 0, f"Non-positive quantity at gas=${gas_price}, coal=${coal_price}"
+        assert not np.isnan(
+            q_star
+        ), f"NaN quantity at gas=${gas_price}, coal=${coal_price}"
+        assert not np.isnan(
+            p_star
+        ), f"NaN price at gas=${gas_price}, coal=${coal_price}"
+        assert (
+            q_star > 0
+        ), f"Non-positive quantity at gas=${gas_price}, coal=${coal_price}"
 
         # Market price should be related to fuel costs when thermal is marginal
         _, breakdown = supply.supply_at(p_star, ts, vals)
@@ -86,8 +107,9 @@ class TestFuelPriceRanges:
             # Price should be at least as high as marginal cost of cheapest thermal
             min_mc = min(coal_price / 0.38, gas_price / 0.55)  # fuel/eta_ub
             # Allow some tolerance for equilibrium discretization
-            assert p_star >= min_mc - 20, \
-                f"Price {p_star} below marginal cost {min_mc} at gas=${gas_price}, coal=${coal_price}"
+            assert (
+                p_star >= min_mc - 20
+            ), f"Price {p_star} below marginal cost {min_mc} at gas=${gas_price}, coal=${coal_price}"
 
     def test_fuel_price_monotonicity(self):
         """Test that market prices increase monotonically with fuel prices"""
@@ -101,12 +123,17 @@ class TestFuelPriceRanges:
         demand = DemandCurve(demand_cfg)
 
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -151,8 +178,9 @@ class TestFuelPriceRanges:
 
         # Verify monotonicity (allowing small tolerance for discretization)
         for i in range(1, len(equilibrium_prices)):
-            assert equilibrium_prices[i] >= equilibrium_prices[i-1] - 5, \
-                f"Price decreased when fuel increased: {equilibrium_prices[i-1]} -> {equilibrium_prices[i]}"
+            assert (
+                equilibrium_prices[i] >= equilibrium_prices[i - 1] - 5
+            ), f"Price decreased when fuel increased: {equilibrium_prices[i-1]} -> {equilibrium_prices[i]}"
 
     @pytest.mark.parametrize("price_ratio", [1.0, 2.0, 5.0, 10.0, 100.0])
     def test_extreme_fuel_price_ratios(self, price_ratio):
@@ -167,12 +195,17 @@ class TestFuelPriceRanges:
         demand = DemandCurve(demand_cfg)
 
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -222,5 +255,6 @@ class TestFuelPriceRanges:
 
             # If both are running, coal should produce more
             if coal_gen > 100 and gas_gen > 100:
-                assert coal_gen >= gas_gen, \
-                    f"Coal should produce more when gas is {price_ratio}x more expensive"
+                assert (
+                    coal_gen >= gas_gen
+                ), f"Coal should produce more when gas is {price_ratio}x more expensive"

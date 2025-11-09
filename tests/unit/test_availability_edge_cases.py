@@ -5,11 +5,11 @@ Test availability edge cases and extreme values.
 import numpy as np
 import pandas as pd
 import pytest
-from synthetic_data_pkg.config import TopConfig
-from synthetic_data_pkg.supply import SupplyCurve
-from synthetic_data_pkg.simulate import find_equilibrium
+
+from synthetic_data_pkg.config import DemandConfig, TopConfig
 from synthetic_data_pkg.demand import DemandCurve
-from synthetic_data_pkg.config import DemandConfig
+from synthetic_data_pkg.simulate import find_equilibrium
+from synthetic_data_pkg.supply import SupplyCurve
 
 
 @pytest.mark.unit
@@ -24,8 +24,12 @@ class TestAvailabilityEdgeCases:
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -69,8 +73,12 @@ class TestAvailabilityEdgeCases:
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -114,8 +122,12 @@ class TestAvailabilityEdgeCases:
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -168,8 +180,12 @@ class TestAvailabilityEdgeCases:
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -219,8 +235,12 @@ class TestAvailabilityEdgeCases:
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -271,19 +291,30 @@ class TestAvailabilityEdgeCases:
             seed=42,
             supply_regime_planner={"mode": "local_only"},
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
                 "avail.coal": {
                     "regimes": [
                         {
                             "name": "normal",
                             "dist": {"kind": "const", "v": 0.90},
-                            "breakpoints": [{"date": "2024-01-01", "transition_hours": 0}],
+                            "breakpoints": [
+                                {"date": "2024-01-01", "transition_hours": 0}
+                            ],
                         },
                         {
                             "name": "outage",
-                            "dist": {"kind": "const", "v": 0.0},  # Complete outage day 2
-                            "breakpoints": [{"date": "2024-01-02", "transition_hours": 0}],
+                            "dist": {
+                                "kind": "const",
+                                "v": 0.0,
+                            },  # Complete outage day 2
+                            "breakpoints": [
+                                {"date": "2024-01-02", "transition_hours": 0}
+                            ],
                         },
                     ]
                 },
@@ -310,8 +341,12 @@ class TestAvailabilityEdgeCases:
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -358,8 +393,12 @@ class TestAvailabilityEdgeCases:
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)

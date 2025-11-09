@@ -17,7 +17,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
 from .config import TopConfig
 from .io import load_config, load_empirical_series, save_dataset
@@ -31,29 +30,29 @@ logger = logging.getLogger(__name__)
 if not logging.getLogger().handlers:
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
 
 def execute_scenario(config_path: str | Path) -> dict[str, Path]:
     """
     Execute a complete scenario simulation from a config file.
-    
+
     Args:
         config_path: Path to YAML/JSON config file (string or Path object)
-        
+
     Returns:
         Dictionary mapping output type to file path (e.g. {"csv": Path(...), "pickle": Path(...)})
-        
+
     Raises:
         FileNotFoundError: If config file cannot be found
         ValidationError: If config is invalid
     """
-    
-    logger.info("="*60)
+
+    logger.info("=" * 60)
     logger.info("   SUPPLY CURVES - Synthetic Data Generation")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     # Use current working directory (where the CLI is run)
     cwd = Path.cwd()
@@ -104,11 +103,11 @@ def execute_scenario(config_path: str | Path) -> dict[str, Path]:
     if series_map:
         logger.info(f"Loaded {len(series_map)} empirical series")
 
-    # cnvert config objects to dicts 
+    # cnvert config objects to dicts
     def to_dict(obj):
-        if hasattr(obj, "model_dump"): #pydantic 2
+        if hasattr(obj, "model_dump"):  # pydantic 2
             return obj.model_dump()
-        elif hasattr(obj, "dict"): # pydantic 1
+        elif hasattr(obj, "dict"):  # pydantic 1
             return obj.dict()
         else:
             return obj
@@ -130,7 +129,9 @@ def execute_scenario(config_path: str | Path) -> dict[str, Path]:
     if max_regimes == min_regimes:
         logger.info(f"  All variables have {max_regimes} regime(s)")
     else:
-        logger.info(f"  Regimes per variable: (min:) {min_regimes} - (max:) {max_regimes}")
+        logger.info(
+            f"  Regimes per variable: (min:) {min_regimes} - (max:) {max_regimes}"
+        )
 
     price_grid = np.array(cfg.price_grid, dtype=float)
 
@@ -172,11 +173,11 @@ def execute_scenario(config_path: str | Path) -> dict[str, Path]:
         for k, p in paths.items():
             filename = Path(p).name
             logger.info(f"  {k:12s} -> {filename}")
-        logger.info("="*60)
+        logger.info("=" * 60)
         logger.info("   Scenario generation complete!")
-        logger.info("="*60)
+        logger.info("=" * 60)
     else:
         logger.warning("No artifacts requested; set io.save_* flags in config.")
-        logger.info("="*60)
+        logger.info("=" * 60)
 
     return paths

@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from .dists import empirical_at, iid_sample, stateful_step
-from .utils import random_partition, _clamp
+from .utils import _clamp, random_partition
 
 
 class RegimeSchedule:
@@ -47,7 +47,7 @@ class RegimeSchedule:
         self._last_ts: Optional[pd.Timestamp] = None
         self._last_value: Optional[float] = None
         self._last_seg_idx: Optional[int] = None
-        self._step_counter: int = 0  
+        self._step_counter: int = 0
 
     def _blend(
         self, ts: pd.Timestamp, seg_idx: int
@@ -92,28 +92,28 @@ class RegimeSchedule:
             if self._last_ts is None
             else max(1, int((ts - self._last_ts) / pd.Timedelta(hours=1)))
         )
-        
+
         # Reset state when changing regimes
         if (self._last_seg_idx is not None) and (seg_idx != self._last_seg_idx):
             self._last_value = None
-            self._step_counter = 0  
+            self._step_counter = 0
 
         kind = dist_curr["kind"].lower()
         if kind == "empirical":
             v = empirical_at(self.series_map, ts, dist_curr)
         elif kind in ("ar1", "rw", "linear"):
             v = self._last_value
-            
+
             # Special handling for linear: use absolute time from segment start
             if kind == "linear":
                 start = dist_curr.get("start", 0.0)
                 slope = dist_curr.get("slope", 0.0)
                 bounds = dist_curr.get("bounds")
-                
+
                 # Calculate hours from segment start
                 seg_start = self.labels[self.labels == seg_name].index[0]
                 hours_from_start = int((ts - seg_start) / pd.Timedelta(hours=1))
-                
+
                 # Linear: value = start + slope * hours
                 v = _clamp(start + slope * hours_from_start, bounds)
             else:
@@ -125,11 +125,20 @@ class RegimeSchedule:
                             {
                                 k: w_curr * dist_curr.get(k, 0)
                                 + w_next * dist_next.get(k, 0)
-                                for k in ("mu", "sigma", "phi", "drift", "start", "slope")
+                                for k in (
+                                    "mu",
+                                    "sigma",
+                                    "phi",
+                                    "drift",
+                                    "start",
+                                    "slope",
+                                )
                                 if (k in dist_curr or (dist_next and k in dist_next))
                             }
                         )
-                        if "bounds" in dist_curr or (dist_next and "bounds" in dist_next):
+                        if "bounds" in dist_curr or (
+                            dist_next and "bounds" in dist_next
+                        ):
                             low = min(
                                 dist_curr.get("bounds", {}).get("low", -np.inf),
                                 dist_next.get("bounds", {}).get("low", -np.inf),

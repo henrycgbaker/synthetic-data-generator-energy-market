@@ -2,9 +2,9 @@
 Test demand curve behavior with extreme elasticity parameters.
 """
 
-import numpy as np
 import pandas as pd
 import pytest
+
 from synthetic_data_pkg.config import DemandConfig
 from synthetic_data_pkg.demand import DemandCurve
 

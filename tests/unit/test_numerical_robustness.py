@@ -6,11 +6,12 @@ Ensures system doesn't crash or produce NaN/Inf in edge conditions.
 import numpy as np
 import pandas as pd
 import pytest
-from synthetic_data_pkg.simulate import find_equilibrium
-from synthetic_data_pkg.demand import DemandCurve
-from synthetic_data_pkg.supply import SupplyCurve
+
 from synthetic_data_pkg.config import DemandConfig, TopConfig
-from synthetic_data_pkg.dists import iid_sample, stateful_step, _clamp
+from synthetic_data_pkg.demand import DemandCurve
+from synthetic_data_pkg.dists import _clamp, iid_sample, stateful_step
+from synthetic_data_pkg.simulate import find_equilibrium
+from synthetic_data_pkg.supply import SupplyCurve
 
 
 @pytest.mark.unit
@@ -28,12 +29,17 @@ class TestNumericalEdgeCases:
         )
         demand = DemandCurve(demand_cfg)
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -84,12 +90,17 @@ class TestNumericalEdgeCases:
         )
         demand = DemandCurve(demand_cfg)
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -139,12 +150,17 @@ class TestNumericalEdgeCases:
         )
         demand = DemandCurve(demand_cfg)
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -179,7 +195,9 @@ class TestNumericalEdgeCases:
         vals_low["fuel.gas"] = 0.1
 
         q_low, p_low = find_equilibrium(ts, demand, supply, vals_low, price_grid)
-        assert not np.isnan(q_low) and not np.isnan(p_low), "Failed with very low fuel prices"
+        assert not np.isnan(q_low) and not np.isnan(
+            p_low
+        ), "Failed with very low fuel prices"
 
         # Test very high fuel prices
         vals_high = vals_base.copy()
@@ -187,7 +205,9 @@ class TestNumericalEdgeCases:
         vals_high["fuel.gas"] = 800.0
 
         q_high, p_high = find_equilibrium(ts, demand, supply, vals_high, price_grid)
-        assert not np.isnan(q_high) and not np.isnan(p_high), "Failed with very high fuel prices"
+        assert not np.isnan(q_high) and not np.isnan(
+            p_high
+        ), "Failed with very high fuel prices"
 
     def test_zero_availability(self):
         """Test with zero availability (complete outage scenario)"""
@@ -200,12 +220,17 @@ class TestNumericalEdgeCases:
         )
         demand = DemandCurve(demand_cfg)
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -253,12 +278,17 @@ class TestNumericalEdgeCases:
         )
         demand = DemandCurve(demand_cfg)
         config = TopConfig(
-            start_ts="2024-01-01", days=1,
+            start_ts="2024-01-01",
+            days=1,
             supply_regime_planner={"mode": "local_only"},
             renewable_availability_mode="weather_simulation",
             variables={
-                "fuel.gas": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]},
-                "fuel.coal": {"regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]},
+                "fuel.gas": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 30.0}}]
+                },
+                "fuel.coal": {
+                    "regimes": [{"name": "s", "dist": {"kind": "const", "v": 25.0}}]
+                },
             },
         )
         supply = SupplyCurve(config, rng_seed=42)
@@ -322,9 +352,16 @@ class TestDistributionNumericalRobustness:
         assert all(49.99 < s < 50.01 for s in samples), "Small sigma failed"
 
         # Very large sigma (very dispersed)
-        spec_large = {"kind": "normal", "mu": 50.0, "sigma": 1000.0, "bounds": {"low": -5000, "high": 5000}}
+        spec_large = {
+            "kind": "normal",
+            "mu": 50.0,
+            "sigma": 1000.0,
+            "bounds": {"low": -5000, "high": 5000},
+        }
         samples = [iid_sample(rng, spec_large) for _ in range(1000)]
-        assert all(-5000 <= s <= 5000 for s in samples), "Large sigma with bounds failed"
+        assert all(
+            -5000 <= s <= 5000 for s in samples
+        ), "Large sigma with bounds failed"
 
     def test_ar1_with_extreme_persistence(self):
         """Test AR1 process with phi very close to 1"""

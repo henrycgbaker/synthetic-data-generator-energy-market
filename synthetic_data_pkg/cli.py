@@ -2,9 +2,8 @@
 This module provides the CLI interface for the synthetic data generator.
 
 Usage:
-    generate run <config_path>              # Run simulation with config file
-    generate run configs/my_scenario.yaml   # Example with relative path
-    generate --config <config_path>         # Alternative syntax
+    synth-data generate <config_path>          # Run simulation with config file
+    synth-data run <config_path>               # Alternative command name
 """
 
 from __future__ import annotations
@@ -17,16 +16,26 @@ from .runner import execute_scenario
 app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
-    help="Synthetic Energy Market Data Generator w/ Regime Changes - model electricity market time series with specied regime changes"
+    rich_markup_mode=None,  # Disable rich output to fix Python 3.13 compatibility
+    help="""Synthetic Energy Market Data Generator
+
+Generate realistic electricity market time series with:
+- Multiple generation technologies (nuclear, coal, gas, wind, solar)
+- Regime-based parameter evolution with smooth transitions
+- Weather-driven renewable availability
+- Elastic/inelastic demand models
+- Planned outage modeling
+
+For more information: https://github.com/henrycgbaker/synthetic-data-generator-energy-market
+""",
 )
 
 
 @app.command("generate", help="Run a market simulation from a configuration file")
-def run_cmd(
+def generate_cmd(
     config: str = typer.Argument(
         ...,
         help="Relative or absolute path to YAML/JSON config file (e.g., configs/1_gas_crisis.yaml)",
-        metavar="CONFIG_PATH"
     )
 ):
     """
@@ -35,16 +44,15 @@ def run_cmd(
     Examples:
         synth-data generate configs/1_gas_crisis.yaml
         synth-data generate /path/to/my_scenario.yaml
-        synth-data generate my_scenario  # Auto-detects .yaml extension
     """
     execute_scenario(config)
-    
+
+
 @app.command("run", help="Run a market simulation from a configuration file")
 def run_cmd(
     config: str = typer.Argument(
         ...,
         help="Relative or absolute path to YAML/JSON config file (e.g., configs/1_gas_crisis.yaml)",
-        metavar="CONFIG_PATH"
     )
 ):
     """
@@ -53,40 +61,12 @@ def run_cmd(
     Examples:
         synth-data run configs/1_gas_crisis.yaml
         synth-data run /path/to/my_scenario.yaml
-        synth-data run my_scenario  # Auto-detects .yaml extension
     """
     execute_scenario(config)
 
 
-@app.callback(invoke_without_command=True)
-def main(
-    ctx: typer.Context,
-    config: str = typer.Option(
-        None,
-        "--config", "-c",
-        help="Path to YAML/JSON config file (alternative to 'run' subcommand)"
-    ),
-):
-    """
-    Synthetic Energy Market Data Generator
-
-    Generate realistic electricity market time series with:
-    - Multiple generation technologies (nuclear, coal, gas, wind, solar)
-    - Regime-based parameter evolution with smooth transitions
-    - Weather-driven renewable availability
-    - Elastic/inelastic demand models
-    - Planned outage modeling
-
-    For more information and examples, see:
-        https://github.com/henrycgbaker/synthetic-data-generator-energy-market
-    """
-    if ctx.invoked_subcommand is None:
-        if not config:
-            raise typer.Exit(code=0)  # help already shown due to no_args_is_help=True
-        execute_scenario(config)
-
-
-def entrypoint():  # how pkg becomes CLI tool
+def entrypoint():
+    """Entry point for the CLI tool."""
     app()
 
 

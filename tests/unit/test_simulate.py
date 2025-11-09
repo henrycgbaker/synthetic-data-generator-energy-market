@@ -6,6 +6,7 @@ Tests equilibrium finding and simulation logic.
 import numpy as np
 import pandas as pd
 import pytest
+
 from synthetic_data_pkg.config import DemandConfig, TopConfig
 from synthetic_data_pkg.demand import DemandCurve
 from synthetic_data_pkg.simulate import find_equilibrium
@@ -79,7 +80,9 @@ class TestEquilibriumFinding:
         assert not np.isnan(p_star), "Equilibrium price is NaN"
         assert q_star > 0, "Equilibrium quantity should be positive"
         # Price should be within grid bounds (but not necessarily on grid - continuous equilibrium)
-        assert price_grid[0] <= p_star <= price_grid[-1], f"Equilibrium price {p_star} outside grid range"
+        assert (
+            price_grid[0] <= p_star <= price_grid[-1]
+        ), f"Equilibrium price {p_star} outside grid range"
 
     def test_equilibrium_with_inelastic_demand(self):
         """Test equilibrium finding with inelastic demand"""
@@ -292,10 +295,14 @@ class TestEquilibriumFinding:
 
         # Price should be below the choke price (low demand scenario)
         # With ~10,600 MW of cheap renewables/nuclear, equilibrium is around P=28-30
-        assert p_star < demand_cfg.base_intercept * 0.7, f"Price {p_star} should be below choke price {demand_cfg.base_intercept}"
+        assert (
+            p_star < demand_cfg.base_intercept * 0.7
+        ), f"Price {p_star} should be below choke price {demand_cfg.base_intercept}"
 
         # Price must be within grid bounds (can be negative in high renewable scenarios!)
-        assert price_grid[0] <= p_star <= price_grid[-1], f"Price {p_star} outside grid bounds"
+        assert (
+            price_grid[0] <= p_star <= price_grid[-1]
+        ), f"Price {p_star} outside grid bounds"
 
     def test_equilibrium_at_price_ceiling(self):
         """Test equilibrium when demand exceeds supply"""

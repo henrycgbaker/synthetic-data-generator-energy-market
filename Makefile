@@ -18,45 +18,45 @@ help:
 	@echo "  make clean                - Clean test artifacts"
 
 install:
-	pip install -e ".[dev]"
+	poetry install
 
 test:
-	python -m pytest -m "not slow"
+	poetry run pytest -m "not slow"
 
 test-all:
-	python -m pytest
+	poetry run pytest
 
 test-unit:
-	python -m pytest -m unit
+	poetry run pytest -m unit
 
 test-integration:
-	python -m pytest -m integration
+	poetry run pytest -m integration
 
 test-functional:
-	python -m pytest -m functional
+	poetry run pytest -m functional
 
 test-smoke:
-	python -m pytest -m smoke
+	poetry run pytest -m smoke
 
 test-slow:
-	python -m pytest -m slow
+	poetry run pytest -m slow
 
 test-coverage:
-	python -m pytest --cov=synthetic_data_pkg --cov-report=html --cov-report=term
+	poetry run pytest --cov=synthetic_data_pkg --cov-report=html --cov-report=term
 
 lint:
-	ruff check synthetic_data_pkg/ tests/
-	mypy synthetic_data_pkg/
+	poetry run ruff check synthetic_data_pkg/ tests/
+	poetry run mypy synthetic_data_pkg/
 
 format:
-	black synthetic_data_pkg/ tests/
-	isort synthetic_data_pkg/ tests/
+	poetry run black synthetic_data_pkg/ tests/
+	poetry run isort synthetic_data_pkg/ tests/
 
 pre-commit-install:
-	pre-commit install
+	poetry run pre-commit install
 
 pre-commit-run:
-	pre-commit run --all-files
+	poetry run pre-commit run --all-files
 
 clean:
 	rm -rf .pytest_cache

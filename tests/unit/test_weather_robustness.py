@@ -5,7 +5,8 @@ Test weather models with extreme parameters and edge cases.
 import numpy as np
 import pandas as pd
 import pytest
-from synthetic_data_pkg.supply import WindWeatherModel, SolarWeatherModel
+
+from synthetic_data_pkg.supply import SolarWeatherModel, WindWeatherModel
 
 
 @pytest.mark.unit
@@ -185,7 +186,9 @@ class TestSolarWeatherEdgeCases:
             if avail > 0:
                 daylight_count += 1
 
-        assert daylight_count > 15, "Most daylight hours should have positive availability"
+        assert (
+            daylight_count > 15
+        ), "Most daylight hours should have positive availability"
 
     def test_solar_zero_peak_capacity_factor(self):
         """Test solar with zero peak capacity factor"""

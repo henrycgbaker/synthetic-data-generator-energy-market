@@ -64,10 +64,10 @@ class DemandCurve:
     def q_at_price(self, p: float, ts: pd.Timestamp) -> float:
         """
         Returns quantity demanded at a given price.
-        
+
         Standard inverse demand: P = intercept + slope * Q
         Solving for Q: Q = (P - intercept) / slope
-        
+
         For inelastic demand, returns fixed quantity regardless of price.
         """
         if self.cfg.inelastic:
@@ -95,9 +95,9 @@ class DemandCurve:
     def p_at_quantity(self, q: float, ts: pd.Timestamp) -> float:
         """
         Returns price at a given quantity demanded.
-        
+
         Standard inverse demand: P = intercept + slope * Q
-        
+
         For inelastic demand, this returns a very high price if q doesn't match fixed demand,
         or a reference price if it does match.
         """

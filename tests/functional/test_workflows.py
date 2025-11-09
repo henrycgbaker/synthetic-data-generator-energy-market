@@ -18,7 +18,9 @@ import yaml
 class TestRunnerScripts:
     """Test that runner scripts execute successfully"""
 
-    @pytest.mark.skip(reason="Slow integration test - run explicitly with 'pytest -m slow'")
+    @pytest.mark.skip(
+        reason="Slow integration test - run explicitly with 'pytest -m slow'"
+    )
     def test_scenario1_runner_executes(self):
         """Test that run_scenario1_gas_crisis.py executes successfully"""
         result = subprocess.run(
@@ -36,7 +38,9 @@ class TestRunnerScripts:
         assert "SCENARIO 1" in result.stdout
         assert "COMPLETE" in result.stdout
 
-    @pytest.mark.skip(reason="Slow integration test - run explicitly with 'pytest -m slow'")
+    @pytest.mark.skip(
+        reason="Slow integration test - run explicitly with 'pytest -m slow'"
+    )
     def test_scenario2_runner_executes(self):
         """Test that run_scenario2_coal_phaseout.py executes successfully"""
         result = subprocess.run(
@@ -51,7 +55,9 @@ class TestRunnerScripts:
         assert "SCENARIO 2" in result.stdout
         assert "COMPLETE" in result.stdout
 
-    @pytest.mark.skip(reason="Slow integration test - run explicitly with 'pytest -m slow'")
+    @pytest.mark.skip(
+        reason="Slow integration test - run explicitly with 'pytest -m slow'"
+    )
     def test_scenario3_runner_executes(self):
         """Test that run_scenario3_full_seasonality.py executes successfully"""
         result = subprocess.run(
@@ -476,7 +482,7 @@ class TestEndToEndWorkflows:
                 "price_grid": list(range(-100, 201, 10)),
                 "demand": {
                     "inelastic": False,
-                    "base_intercept": 200.0, 
+                    "base_intercept": 200.0,
                     "slope": -0.006,  # dP/dQ
                     "daily_seasonality": False,
                     "annual_seasonality": False,

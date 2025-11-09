@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+
 from synthetic_data_pkg.config import (
     DemandConfig,
     IOConfig,
@@ -190,6 +191,7 @@ def minimal_config(temp_output_dir):
         ),
     )
 
+
 @pytest.fixture
 def standard_vals():
     """Standard variable values for testing"""
@@ -220,10 +222,15 @@ def standard_vals():
 @pytest.fixture
 def scaled_vals(standard_vals):
     """Factory for scaled variable values"""
+
     def _scale(scale_factor):
-        return {k: (v * scale_factor if k.startswith("cap.") else v)
-                for k, v in standard_vals.items()}
+        return {
+            k: (v * scale_factor if k.startswith("cap.") else v)
+            for k, v in standard_vals.items()
+        }
+
     return _scale
+
 
 @pytest.fixture
 def sample_timeseries():
