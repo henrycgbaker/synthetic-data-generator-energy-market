@@ -5,19 +5,21 @@
 - **Python 3.11** or higher
 - **Poetry** (for dependency management)
 
-### Install Poetry (if you don't have it)
+If not already, install Poetry
 
 ```bash
 curl -sSL https://install.python-poetry.org | python3 -
 ```
 
-After installation, restart your terminal or add Poetry to your PATH:
+After installation, restart terminal or add Poetry to PATH:
+
 ```bash
 # Linux/macOS
 export PATH="$HOME/.local/bin:$PATH"  
 ```
 
-Verify Poetry is installed:
+Verify Poetry installed:
+
 ```bash
 poetry --version
 ```
@@ -25,8 +27,6 @@ poetry --version
 ---
 
 ## Installation Methods
-
-Choose the method that fits your workflow:
 
 ### Method 1: Poetry + Venv Manager (recommended)
 
@@ -46,14 +46,11 @@ poetry install
 
 # 4. Verify it works
 synth-data --help
-
-# 5. Run a test scenario
-synth-data generate configs/1_gas_crisis.yaml
 ```
 
 ### Method 2: Pure Poetry 
 
-This is the **simplest approach** - Poetry creates and manages a virtual environment for you.
+Poetry creates and manages a virtual environment for you.
 
 ```bash
 # 1. Clone the repository
@@ -72,7 +69,7 @@ source .venv/bin/activate  # On Linux/macOS
 synth-data --help
 ```
 
-**From now on:** Always activate the environment before working:
+**Future work:** need to activate the environment before working:
 ```bash
 source .venv/bin/activate  # Linux/macOS
 ```
@@ -102,15 +99,6 @@ python -m ipykernel install --user --name=synth-data-generator --display-name="S
 - **Method 2 users:** Run `conda activate synth_data`
 - **Method 3 users:** Use `poetry run synth-data ...`
 
-### "ImportError: cannot import name 'field_validator'"
-
-**Problem:** Old pydantic version installed.
-
-**Solution:**
-```bash
-poetry install --sync  # Force reinstall
-```
-
 ### Poetry not found after installation
 
 **Problem:** Poetry not in PATH.
@@ -120,23 +108,4 @@ poetry install --sync  # Force reinstall
 export PATH="$HOME/.local/bin:$PATH"
 # Add this line to ~/.bashrc or ~/.zshrc to make it permanent
 ```
-
----
-
-## Updating Dependencies
-
-```bash
-# Update a specific package
-poetry update pydantic
-
-# Update all packages
-poetry update
-
-# Add a new dependency
-poetry add numpy
-
-# Add a dev dependency
-poetry add --group dev pytest
-```
-
 ---
